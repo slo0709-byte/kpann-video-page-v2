@@ -117,10 +117,6 @@ html body.kpv-on .nested-view__op-row > .topic-avatar img.avatar {
   height: 38px;
 }
 
-/* 观看数这一行只在视频帖出现，其它分类的作者行跟改动前一致 */
-html body:not(.kpv-on) .kpv-views {
-  display: none;
-}
 /* ---------- 正文：视频帖首楼只有播放器，正文里的 iframe 不重复渲染 ---------- */
 html body.kpv-on .nested-view__op-content {
   margin-top: 2px;
@@ -560,12 +556,6 @@ html body.kpv-on .nested-view__topic-map {
 
 
 
-/* 观看数：跟发布时间同一档小字，不抢视线 */
-html body.kpv-on .kpv-views {
-  color: var(--primary-medium);
-  font-size: var(--font-down-1);
-  white-space: nowrap;
-}
 
 /* 沉浸按钮跟原生动作键同一外观：无边框、无底色 */
 html body.kpv-on .kpann-immersive {
@@ -622,15 +612,7 @@ html body.kpv-on .kpv-meta-row .post-infos {
   gap: 6px;
 }
 
-html body.kpv-on .kpv-views {
-  order: 1;
-}
 
-html body.kpv-on .kpv-views::after {
-  margin-left: 6px;
-  color: var(--primary-low-mid);
-  content: "•";
-}
 /* 元信息那块只是包了一层的容器，摊平后名字和「观看 • 时间」才能各占一行 */
 html body.kpv-on .kpv-meta-row .topic-meta-data {
   display: contents;
