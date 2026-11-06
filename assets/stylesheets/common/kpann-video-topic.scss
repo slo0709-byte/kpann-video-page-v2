@@ -111,33 +111,10 @@ html body.kpv-on .nested-view__op {
   border: 0;
 }
 
-html body.kpv-on .nested-view__op-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  column-gap: 10px;
-  row-gap: 8px;
-}
-
+/* 首楼那一行不动核心的栅格（改它会随主题版本塌成 0 宽），只调头像尺寸 */
 html body.kpv-on .nested-view__op-row > .topic-avatar img.avatar {
   width: 38px;
   height: 38px;
-}
-
-html body.kpv-on .nested-view__op-row > .topic-avatar {
-  position: static;
-  grid-column: 1;
-  grid-row: 1;
-  align-self: center;
-  width: auto;
-  height: auto;
-  margin: 0;
-  padding: 0;
-  float: none;
-}
-
-html body.kpv-on .nested-view__op-body {
-  display: contents;
 }
 
 /* 观看数这一行只在视频帖出现，其它分类的作者行跟改动前一致 */
@@ -449,20 +426,8 @@ html body.kpv-on .kpv-pill__t {
   }
 }
 
-/* 话题级按钮（管理 / 分享 / 收藏 / 更多 / 通知）本来是页脚内容，
-   核心把它排在标题下面，在视频版式里挪到评论区之后 */
-html body.kpv-on .nested-view {
-  display: flex;
-  flex-direction: column;
-}
+/* 话题级按钮保持核心位置，不再用 flex order 挪动 */
 
-html body.kpv-on .nested-view > * {
-  min-width: 0;
-}
-
-html body.kpv-on .nested-view__topic-actions {
-  order: 9;
-}
 
 /* 列表本体：抽屉和右栏共用，一条一个缩略图 + 标题 */
 html body.kpv-on .kpv-coll__list {
