@@ -1,0 +1,34 @@
+plugins:
+  kpann_video_page_enabled:
+    default: true
+    client: true
+    description: "启用 Kpann 视频列表卡片与视频观看页"
+
+  kpann_gallery_categories:
+    default: "190"
+    type: list
+    list_type: category
+    client: true
+    description: "套用视频卡片样式的分类"
+
+  kpann_topic_video_layout:
+    default: true
+    client: true
+    description: "帖子页使用视频观看页布局"
+
+  kpann_immersive_entry:
+    default: true
+    client: true
+    description: "手机端视频帖显示沉浸观看入口"
+
+  kpann_immersive_excerpt_chars:
+    default: 80
+    min: 0
+    client: true
+    description: "沉浸页简介折叠前的字数，0 表示不折叠"
+
+  kpann_watch_excerpt_chars:
+    default: 120
+    min: 0
+    client: true
+    description: "视频内页正文超过多少字折叠（显示「展开全文」），0 表示不折叠"

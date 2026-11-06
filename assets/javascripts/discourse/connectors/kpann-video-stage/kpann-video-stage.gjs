@@ -1,0 +1,223 @@
+import Component from "@glimmer/component";
+import { action } from "@ember/object";
+import { fn } from "@ember/helper";
+import { on } from "@ember/modifier";
+import didInsert from "@ember/render-modifiers/modifiers/did-insert";
+import willDestroy from "@ember/render-modifiers/modifiers/will-destroy";
+import { service } from "@ember/service";
+import getURL from "discourse/lib/get-url";
+import dIcon from "discourse/ui-kit/helpers/d-icon";
+
+// 视频帖顶部播放器：16:9 的一格。
+// 地址来自服务端序列化的 topic.kpann_videos / kpann_embed_url；
+// 只在后台设置 kpann_gallery_categories 里的分类生效，别的分类不受影响。
+// 这里只做渲染，不搬任何原生节点，也不在渲染后改 DOM。
+export default class KpannVideoStage extends Component {
+  @service siteSettings;
+  @service kpvPlayer;
+
+  get topic() {
+    return this.args.model || this.args.outletArgs?.model;
+  }
+
+  get enabledCategories() {
+    return String(this.siteSettings.kpann_gallery_categories || "")
+      .split("|")
+      .filter(Boolean)
+      .map(Number);
+  }
+
+  get isVideoTopic() {
+    const id = Number(this.topic?.category?.id || this.topic?.category_id);
+    return !!id && this.enabledCategories.includes(id);
+  }
+
+  get videos() {
+    const list = this.topic?.kpann_videos;
+    return this.isVideoTopic && Array.isArray(list) ? list : [];
+  }
+
+  get index() {
+    return this.kpvPlayer.indexFor(this.topic?.id);
+  }
+
+  get currentVideo() {
+    return this.videos[this.index] || null;
+  }
+
+  get src() {
+    if (!this.isVideoTopic) {
+      return null;
+    }
+    return this.currentVideo?.embed || this.topic?.kpann_embed_url || null;
+  }
+
+  get title() {
+    return this.currentVideo?.title || this.topic?.title || "视频";
+  }
+
+  // 只有一项：换集时这一项的值变了，keyed each 会重建 iframe 元素
+  get frames() {
+    return this.src ? [this.src] : [];
+  }
+
+  // PC 播放器下面那排分集胶囊（Gemini 方案 B）：P1 + 这一集自己的真标题
+  get pills() {
+    return this.videos.map((video, index) => ({
+      index,
+      label: `P${index + 1}`,
+      title:
+        video.title ||
+        this.pillDuration(video.duration) ||
+        (video.provider === "youtube" ? "YouTube" : "B 站"),
+      active: index === this.index,
+    }));
+  }
+
+  pillDuration(seconds) {
+    const total = Math.round(Number(seconds) || 0);
+    if (!total) {
+      return null;
+    }
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+  }
+
+  // 有合集就出胶囊排（单视频帖不出）
+  get showPills() {
+    return this.pills.length > 1;
+  }
+
+  get immersiveHref() {
+    return getURL(`/shorts?topic=${this.topic?.id}&v=${this.index}`);
+  }
+
+  // 平铺页的动作排（post-menu__after connector）靠这个拿到当前这条视频
+  @action
+  selectPill(index) {
+    // 刚拖完的那一下不算点击
+    if (this.dragEndedAt && Date.now() - this.dragEndedAt < 250) {
+      return;
+    }
+    if (this.topic?.id != null) {
+      this.kpvPlayer.select(this.topic.id, index);
+    }
+  }
+
+  // 胶囊排：按住鼠标可以拖着横滚（手机上原生滑动就够，这里不接管）
+  // 注意不要一按下就 setPointerCapture：那样 click 会落到容器上，胶囊就点不动了
+  @action
+  startDrag(event) {
+    if (event.pointerType === "touch") {
+      return;
+    }
+    const el = event.currentTarget;
+    this.drag = {
+      x: event.clientX,
+      left: el.scrollLeft,
+      el,
+      id: event.pointerId,
+      captured: false,
+    };
+    this.dragged = false;
+  }
+
+  @action
+  moveDrag(event) {
+    if (!this.drag) {
+      return;
+    }
+    const dx = event.clientX - this.drag.x;
+    if (!this.drag.captured) {
+      if (Math.abs(dx) <= 4) {
+        return;
+      }
+      // 真正开始拖了才接管指针，普通点击不受影响
+      this.drag.captured = true;
+      this.dragged = true;
+      this.drag.el.setPointerCapture?.(this.drag.id);
+      this.drag.el.classList.add("is-dragging");
+    }
+    this.drag.el.scrollLeft = this.drag.left - dx;
+  }
+
+  @action
+  endDrag() {
+    if (!this.drag) {
+      return;
+    }
+    const moved = this.drag.captured;
+    if (moved) {
+      this.drag.el.releasePointerCapture?.(this.drag.id);
+      this.drag.el.classList.remove("is-dragging");
+      // 只有真的拖动过才屏蔽紧接着的那次点击；普通点击不做处理
+      this.dragEndedAt = Date.now();
+    }
+    this.drag = null;
+  }
+
+  // 给 body 挂一个标记类：样式一律以它为作用域，桌面/手机、嵌套/平铺都通用
+  @action
+  markPage() {
+    document.body.classList.add("kpv-on");
+    this.kpvPlayer.setTopic(this.topic);
+
+    // 从沉浸页退回来时带 ?kpv=N，直接选中那一集
+    const raw = new URLSearchParams(window.location.search).get("kpv");
+    const index = Number.parseInt(raw, 10);
+    if (!Number.isNaN(index) && this.topic?.id != null) {
+      this.kpvPlayer.select(this.topic.id, index);
+    }
+  }
+
+  @action
+  unmarkPage() {
+    document.body.classList.remove("kpv-on");
+  }
+
+  <template>
+    {{#if this.src}}
+      <div class="kpv" {{didInsert this.markPage}} {{willDestroy this.unmarkPage}}>
+        <div class="kpv__stage">
+          {{! 换集时重建 iframe（不要改同一个元素的 src）：改 src 会往浏览器历史里插一条，
+              后退就会一集一集往回走。新建元素不产生历史条目。 }}
+          {{#each this.frames key="@identity" as |src|}}
+            <iframe
+              class="kpv__frame"
+              src={{src}}
+              title={{this.title}}
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowfullscreen
+              frameborder="no"
+              scrolling="no"
+            ></iframe>
+          {{/each}}
+        </div>
+
+        {{#if this.showPills}}
+          <div
+            class="kpv-pills"
+            {{on "pointerdown" this.startDrag}}
+            {{on "pointermove" this.moveDrag}}
+            {{on "pointerup" this.endDrag}}
+            {{on "pointercancel" this.endDrag}}
+          >
+            {{#each this.pills as |pill|}}
+              <button
+                type="button"
+                class="kpv-pill {{if pill.active 'is-active'}}"
+                title={{pill.title}}
+                {{on "click" (fn this.selectPill pill.index)}}
+              >
+                <span class="kpv-pill__n">{{pill.label}}</span>
+                <span class="kpv-pill__t">{{pill.title}}</span>
+              </button>
+            {{/each}}
+          </div>
+        {{/if}}
+      </div>
+    {{/if}}
+  </template>
+}
+
+
+

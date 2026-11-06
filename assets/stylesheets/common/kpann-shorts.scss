@@ -1,0 +1,808 @@
+.kp-shorts {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+  overflow: hidden;
+}
+
+.kp-shorts__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
+}
+
+.kp-shorts__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.kp-shorts__track {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.kp-shorts__track::-webkit-scrollbar {
+  display: none;
+}
+
+.kp-slide {
+  position: relative;
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kp-slide__link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.kp-slide__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.kp-slide__play {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 22px;
+}
+
+.kp-slide__side {
+  position: absolute;
+  right: 12px;
+  bottom: 142px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.kp-act {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kp-act .d-icon {
+  font-size: 22px;
+  color: #fff;
+}
+
+/* 已赞：跟官方点赞按钮一样走主题的 like 色（--love） */
+.kp-act--like.is-liked,
+.kp-act--like.is-liked .d-icon {
+  color: var(--love, #e45735);
+}
+
+.kp-slide__meta {
+  position: absolute;
+  left: 14px;
+  right: 70px;
+  bottom: 46px;
+  color: #fff;
+}
+
+.kp-slide__title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.kp-slide__excerpt {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.86);
+  word-break: break-word;
+}
+
+.kp-slide__excerpt.is-expanded {
+  max-height: 42vh;
+  overflow-y: auto;
+}
+
+.kp-slide__excerpt-toggle {
+  display: inline-block;
+  margin: 2px 0 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.kp-slide__excerpt-toggle:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+body.kpann-shorts-route .d-header,
+body.kpann-shorts-route .sidebar-wrapper {
+  display: none;
+}
+
+.kp-slide__stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kp-slide__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: contain;
+}
+
+.kp-slide__poster {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.kp-slide__author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.kp-slide__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.kp-slide__username {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+
+/* 封面和播放器不叠在一起；播放器满屏铺 */
+.kp-slide__holder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.kp-slide__holder:has(iframe) .kp-slide__poster {
+  display: none;
+}
+
+.kp-slide__poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kp-slide__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+
+/* 评论抽屉 */
+.kp-csheet {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+}
+
+.kp-csheet__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.kp-csheet.is-open .kp-csheet__backdrop {
+  opacity: 1;
+}
+
+.kp-csheet__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: #141414;
+  color: #fff;
+  border-radius: 16px 16px 0 0;
+  transform: translateY(100%);
+  transition: transform 0.22s ease;
+  overflow: hidden;
+}
+
+.kp-csheet.is-open .kp-csheet__panel {
+  transform: translateY(0);
+}
+
+.kp-csheet__handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+  margin: 8px auto 4px;
+}
+
+.kp-csheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kp-csheet__close {
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 22px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.kp-csheet__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 12px;
+}
+
+.kp-csheet__loading,
+.kp-csheet__empty {
+  padding: 24px 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
+.kp-cpost {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kp-cpost__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex: 0 0 32px;
+}
+
+.kp-cpost__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.kp-cpost__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.kp-cpost__name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.kp-cpost__time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.kp-cpost__cooked {
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.86);
+  word-break: break-word;
+}
+
+.kp-cpost__cooked img {
+  max-width: 100%;
+  height: auto;
+}
+
+.kp-csheet__open {
+  display: block;
+  margin: 0 16px 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+.kp-csheet__composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #141414;
+}
+
+.kp-csheet__input {
+  flex: 1;
+  min-height: 40px;
+  max-height: 120px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: none;
+}
+
+.kp-csheet__input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.kp-csheet__send {
+  height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kp-csheet__send:disabled {
+  opacity: 0.6;
+}
+
+
+/* 原生评论弹窗（复用 Discourse 的 Post 组件） */
+.kp-comments-modal .d-modal__body {
+  padding: 0;
+}
+
+.kp-comments-modal__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.kp-comments-modal__post {
+  padding: 0;
+}
+
+
+
+.kp-comments-modal__loading,
+.kp-comments-modal__empty {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--primary-medium);
+  font-size: 13px;
+}
+
+.kp-comments-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+
+.kp-slide__authorlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  text-decoration: none;
+}
+
+
+.kp-comments-modal__footer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.kp-comments-modal__input {
+  flex: 1;
+  min-height: 40px;
+  max-height: 120px;
+  padding: 10px 12px;
+  border: 1px solid var(--primary-low);
+  border-radius: 12px;
+  font-size: 14px;
+  resize: none;
+}
+
+
+.kp-comments-modal__post--child {
+  margin-left: 20px;
+}
+
+.kp-comments-modal__post--grand {
+  margin-left: 44px;
+}
+
+/* 作者行保留装扮：头像框、名牌按原生结构渲染，这里只约束尺寸，别压到标题 */
+.kp-slide__authorlink {
+  background: none !important;
+  border: 0 !important;
+}
+
+.kp-slide__authorlink .kp-slide__avatarwrap {
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  float: none;
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.kp-slide__authorlink .kp-slide__avatarwrap .post-avatar {
+  width: 40px;
+  height: 40px;
+  display: block;
+  position: relative;
+  margin: 0;
+}
+
+.kp-slide__authorlink .kp-slide__avatarwrap img.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.kp-slide__authorlink .kp-slide__username {
+  display: inline-block;
+  max-width: 62vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* 资料卡要在评论弹窗之上 */
+body.kpann-shorts-route .fk-d-menu,
+body.kpann-shorts-route .user-card,
+body.kpann-shorts-route #d-menu-portals,
+body.kpann-shorts-route .d-popover {
+  z-index: 1400 !important;
+}
+
+
+
+
+
+/* 作者行：沿用原生尺寸（16px / 22 行高），装扮按原生规格排 */
+.kp-slide__author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kp-slide__authorlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #fff;
+}
+
+.kp-slide__author .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.kp-slide__author .username,
+.kp-slide__author .full-name {
+  font-size: 16px;
+  line-height: 22px;
+  color: #fff;
+}
+
+/* 定位完成前不显示列表，避免先闪第一条 */
+body.kpann-shorts-route .kp-shorts__track {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+body.kpann-shorts-route .kp-shorts__track.is-ready {
+  opacity: 1;
+}
+
+
+/* 去掉主题给楼层加的 .boxed 外框，弹窗里只靠间距分隔，避免叠框 */
+.kp-comments-modal .topic-post,
+.kp-comments-modal .topic-post.boxed,
+.kp-comments-modal .onscreen-post {
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.kp-comments-modal__list {
+  padding: 4px 12px 8px;
+}
+
+.kp-comments-modal__post + .kp-comments-modal__post {
+  margin-top: 12px;
+}
+
+
+/* 弹窗里的原生嵌套评论区：只补内边距，不改它自己的排版 */
+.kp-comments-modal__nested {
+  padding: 4px 12px 12px;
+}
+
+
+/* 编辑器打开时让位：把评论弹窗（连同遮罩）压到编辑器层之下，保证编辑器可点 */
+.modal-container:has(.kp-comments-modal--composer-open) {
+  z-index: 1049 !important;
+}
+
+.modal-container:has(.kp-comments-modal--composer-open) .kp-comments-modal,
+.modal-container:has(.kp-comments-modal--composer-open) .d-modal__backdrop {
+  z-index: 1049 !important;
+}
+
+/* 面板里只留评论：隐藏嵌套视图自带的标题、首楼、类别、底部入口与推荐 */
+.kp-comments-modal__nested .nested-view__header,
+.kp-comments-modal__nested .nested-view__op,
+.kp-comments-modal__nested .nested-view__topic-actions,
+.kp-comments-modal__nested .nested-view__floating-actions,
+.kp-comments-modal__nested .more-topics__container,
+.kp-comments-modal__nested .topic-above-footer-buttons-outlet,
+.kp-comments-modal__nested .presence,
+.kp-comments-modal__nested .mod-private-note-outlet,
+.kp-comments-modal__nested .mod-topic-footer-message-outlet {
+  display: none !important;
+}
+
+/* 编辑器打开时面板让位：把弹窗（连同遮罩）降到编辑器层之下，保证编辑器可点 */
+body:has(#reply-control.open) .modal-container:has(.kp-comments-modal) {
+  z-index: 1049 !important;
+}
+
+body:has(#reply-control.open) .modal-container:has(.kp-comments-modal) .kp-comments-modal,
+body:has(#reply-control.open) .modal-container:has(.kp-comments-modal) .d-modal__backdrop {
+  z-index: 1049 !important;
+}
+
+/* 作者行只保留头像和名牌：装扮插件会把「表面框」画到带 data-user-card 的元素上，
+   那是第二个框，落整行上，这里关掉；头像框走 .post-avatar，不受影响 */
+body.kpann-shorts-route .kp-slide__authorlink::before,
+body.kpann-shorts-route .kp-slide__authorlink::after {
+  content: none !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* 作者行对齐与尺寸：头像和名牌按一行居中，头像 36、名字 14 */
+body.kpann-shorts-route .kp-slide__authorlink {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+body.kpann-shorts-route .kp-slide__authorlink .kp-slide__avatarwrap,
+body.kpann-shorts-route .kp-slide__authorlink .kp-slide__avatarwrap .post-avatar,
+body.kpann-shorts-route .kp-slide__authorlink .kp-slide__avatarwrap img.avatar,
+body.kpann-shorts-route .kp-slide__author .avatar {
+  width: 36px !important;
+  height: 36px !important;
+}
+
+body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
+  font-size: 14px !important;
+  line-height: 20px !important;
+  vertical-align: baseline !important;
+}
+
+/* 头像和名牌垂直居中：不依赖布局模式，两个都按中线对齐 */
+body.kpann-shorts-route .kp-slide__authorlink .kp-slide__avatarwrap,
+body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
+  vertical-align: middle !important;
+}
+
+/* 切换视频不闪封面：封面常驻底层，播放器加载完再淡入 */
+.kp-slide__holder {
+  background: #000 !important;
+}
+
+.kp-slide__holder .kp-slide__poster,
+.kp-slide__holder:has(iframe) .kp-slide__poster {
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  z-index: 0;
+}
+
+.kp-slide__holder .kp-slide__frame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  background: transparent;
+}
+
+.kp-slide__holder .kp-slide__frame.is-ready {
+  opacity: 1;
+}
+
+.kp-slide__holder .kp-slide__frame.kp-frame-ready {
+  opacity: 1;
+}
+
+/* 播放器层级不能压住右侧互动栏和作者行 */
+.kp-slide__holder .kp-slide__frame {
+  z-index: 0 !important;
+}
+
+.kp-slide__side,
+.kp-slide__meta {
+  z-index: 3 !important;
+}
+
+
+/* 合集：右侧按钮 + 底部列表 */
+.kp-collection {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.2s ease;
+}
+
+.kp-collection.is-open {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.kp-collection__panel {
+  width: 100%;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: #1c1c1e;
+  border-radius: 16px 16px 0 0;
+  color: #fff;
+  transform: translateY(100%);
+  transition: transform 0.22s ease;
+}
+
+.kp-collection.is-open .kp-collection__panel {
+  transform: translateY(0);
+}
+
+.kp-collection__title {
+  padding: 4px 8px 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.kp-collection__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 14px;
+  text-align: left;
+}
+
+.kp-collection__item.is-current {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.kp-collection__index {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 12px;
+}
+
+.kp-collection__meta {
+  flex: 1;
+}
+
+.kp-collection__close {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}

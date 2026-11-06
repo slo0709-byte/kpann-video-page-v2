@@ -1,0 +1,133 @@
+/* 经典（平铺楼层）话题页的视频版式。
+   结构全是官方的：播放器走 topic-above-post-stream outlet，
+   标题、作者行、正文、动作排、楼层都是核心组件，这里只改样子。 */
+
+/* ---------- 标题 ---------- */
+html body.kpv-on #topic-title {
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+html body.kpv-on #topic-title h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+html body.kpv-on #topic-title .topic-category {
+  margin-top: 6px;
+  font-size: var(--font-down-1);
+}
+
+/* ---------- 首楼：把卡片边框压平，作者行收紧 ---------- */
+html body.kpv-on #post_1.boxed {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html body.kpv-on #post_1 .topic-avatar img.avatar {
+  width: 38px;
+  height: 38px;
+}
+
+html body.kpv-on #post_1 .topic-meta-data {
+  margin: 0;
+  padding: 0;
+}
+
+html body.kpv-on #post_1 .topic-meta-data .names {
+  font-size: var(--font-down-1);
+}
+
+html body.kpv-on #post_1 .cooked {
+  margin-top: 6px;
+}
+
+/* 播放器已经在顶上，正文里的播放器不再重复渲染，但段落文字要留着 */
+html body.kpv-on #post_1 .cooked iframe,
+html body.kpv-on #post_1 .cooked video {
+  display: none;
+}
+
+/* 平铺页动作排保持核心原生样式；这里只给插件补的「沉浸」链一个最小按钮外观 */
+html body.kpv-on #post_1 .post-menu-area .kpv-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--primary-low);
+  border-radius: 10px;
+  background: var(--primary-very-low);
+  color: var(--primary-high);
+  font-size: var(--font-down-1);
+}
+
+html body.kpv-on #post_1 .post-menu-area .kpv-act:hover {
+  background: var(--primary-low);
+  color: var(--primary);
+  text-decoration: none;
+}
+
+html body.kpv-on #post_1 .post-menu-area .kpv-act .d-icon {
+  color: inherit;
+}
+/* 桌面宽度跟普通平铺话题页一致，不再单独收窄 */
+
+/* outlet 外面包的是 <span>，是行内盒，会把播放器挤窄；这里拉满 */
+html body.kpv-on .topic-above-post-stream-outlet {
+  display: block;
+  width: 100%;
+}
+
+html body.kpv-on .topic-above-post-stream-outlet > * {
+  width: 100%;
+}
+
+/* 标题在经典页里被核心放大到 2em，这里压回设计稿大小 */
+html body.kpv-on #topic-title h1,
+html body.kpv-on #topic-title h1 a.fancy-title {
+  font-size: 1.15rem !important;
+  line-height: 1.35;
+}
+
+/* 正文里的播放器不重复渲染，但同一段里的说明文字要留着（以前整段藏掉，文字也没了） */
+html body.kpv-on #post_1 .cooked .lazy-video-wrapper,
+html body.kpv-on #post_1 .cooked .lazy-video-container,
+html body.kpv-on #post_1 .cooked .video-thumbnail,
+html body.kpv-on #post_1 .cooked .youtube-onebox,
+html body.kpv-on #post_1 .cooked iframe {
+  display: none;
+}
+
+/* 只放视频的那一段不要留空白 */
+html body.kpv-on #post_1 .cooked > p:has(> iframe) {
+  margin-block: 0;
+}
+
+
+/* 桌面上就先上下排：播放器满宽、合集在下面。
+   右栏（合集在右）暂时不做——主题给内容列只有 ~431px，
+   塞一个 340px 的右栏会把播放器挤成 60px 宽，得先把整页内容列放宽再说。 */
+@media (min-width: 68.75rem) {
+  html body.kpv-on .kpv-classic {
+    display: block !important;
+  }
+
+  html body.kpv-on .kpv-classic .kpv {
+    width: 100%;
+  }
+
+  html body.kpv-on .kpv-classic .kpv-coll {
+    margin: 12px 0 0;
+  }
+}
+
+/* 平铺页：核心自己就有「浏览量」，插件这条不再重复显示 */
+html body.kpv-on #post_1 .kpv-views {
+  display: none;
+}

@@ -1,0 +1,672 @@
+/* ============================================================
+   视频帖内页版式（/t/… 话题页，仅视频分类生效）
+   ------------------------------------------------------------
+   骨架：播放器 → 标题 → 阅读状态/关注 → 作者行 → 正文 → 动作排 → 合集 → 评论
+   · 作用域：html body.kpv-on；.kpv 是插件在 kpann-video-stage
+     outlet 里渲染的播放器，只有视频帖才有，所以别的帖子不会命中。
+   · 骨架里的每一块都是核心原生节点（.nested-view__*），插件只新增
+     播放器、合集列表、动作排里的「沉浸」入口这三块。
+   · 评论区不加任何规则。
+   · 颜色、圆角、字号走主题变量，不写死色值。
+   ============================================================ */
+
+/* ---------- 播放器 ---------- */
+html body.kpv-on .kpv {
+  margin: 0 0 14px;
+}
+
+html body.kpv-on .kpv__stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--d-border-radius);
+  background: #000;
+}
+
+html body.kpv-on .kpv__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ---------- 标题 ---------- */
+html body.kpv-on .nested-view__header {
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+html body.kpv-on .nested-view__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+html body.kpv-on .nested-view__header .topic-category {
+  margin-top: 6px;
+  font-size: var(--font-down-1);
+}
+
+/* ---------- 阅读状态 + 关注（原生 NestedTopicActions 那一行） ---------- */
+html body.kpv-on .nested-view__topic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+/* 话题底部那排大按钮在视频帖里不要：分享/书签/举报/管理都在动作排的「⋯」里，
+   通知级别、回复、管理在右下角原生浮层上，功能没少。 */
+html body.kpv-on .nested-view__topic-actions .topic-footer-main-buttons {
+  display: none;
+}
+
+html body.kpv-on .nested-view__topic-actions .notifications-button-footer {
+  display: block;
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+html body.kpv-on .nested-view__topic-actions .reason {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+}
+
+html body.kpv-on .nested-view__topic-actions .reason .text {
+  color: var(--primary-medium);
+}
+
+html body.kpv-on .nested-view__topic-actions .reason .text a {
+  color: var(--tertiary);
+}
+
+html body.kpv-on .nested-view__topic-actions .reason .btn {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--tertiary-low);
+  border-radius: 17px;
+  background: var(--tertiary-very-low);
+  color: var(--tertiary);
+  font-size: var(--font-down-1);
+}
+
+/* ---------- 作者行：原生头像 + 原生元信息，桌面也排成「头像 + 一行信息」 ---------- */
+html body.kpv-on .nested-view__op {
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+}
+
+html body.kpv-on .nested-view__op-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 8px;
+}
+
+html body.kpv-on .nested-view__op-row > .topic-avatar img.avatar {
+  width: 38px;
+  height: 38px;
+}
+
+html body.kpv-on .nested-view__op-row > .topic-avatar {
+  position: static;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  float: none;
+}
+
+html body.kpv-on .nested-view__op-body {
+  display: contents;
+}
+
+/* 观看数这一行只在视频帖出现，其它分类的作者行跟改动前一致 */
+html body:not(.kpv-on) .kpv-views {
+  display: none;
+}
+/* ---------- 正文：视频帖首楼只有播放器，正文里的 iframe 不重复渲染 ---------- */
+html body.kpv-on .nested-view__op-content {
+  margin-top: 2px;
+}
+
+/* 正文里的播放器不再重复渲染（播放器已经在顶上），但段落里的文字要留着：
+   不少帖子把说明文字和视频链接写在同一个 <p> 里，整段隐藏会把正文一起删掉。 */
+html body.kpv-on .nested-view__op-content .cooked iframe,
+html body.kpv-on .nested-view__op-content .cooked video,
+html body.kpv-on .nested-view__op-content .cooked .lazy-video-wrapper,
+html body.kpv-on .nested-view__op-content .cooked .lazy-video-container,
+html body.kpv-on .nested-view__op-content .cooked .video-thumbnail,
+html body.kpv-on .nested-view__op-content .cooked .youtube-onebox {
+  display: none;
+}
+
+
+/* ---------- 正文折叠：超过后台设置的字数收成 3 行 + 展开全文 ----------
+   按钮由 post-content-cooked-html 的 __after connector 提供，
+   折叠状态只看按钮自己有没有 .is-open，不改核心组件的 class */
+html body.kpv-on :has(> .kpv-body__toggle:not(.is-open)) > .cooked,
+html body.kpv-on .cooked:has(> .kpv-body__toggle:not(.is-open)),
+html body.kpv-on .nested-view__op-content:has(.kpv-body__toggle:not(.is-open)) .cooked {
+  position: relative;
+  max-height: calc(1.6em * 3);
+  overflow: hidden;
+}
+
+html body.kpv-on :has(> .kpv-body__toggle:not(.is-open)) > .cooked::after,
+html body.kpv-on .cooked:has(> .kpv-body__toggle:not(.is-open))::after,
+html body.kpv-on .nested-view__op-content:has(.kpv-body__toggle:not(.is-open)) .cooked::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2.4em;
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0), var(--secondary));
+  content: "";
+  pointer-events: none;
+}
+
+html body.kpv-on .kpv-body__toggle {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tertiary);
+  font-size: var(--font-down-1);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+
+/* ---------- 合集：桌面右栏 340 / 手机底部抽屉 ---------- */
+html body.kpv-on .kpv-coll {
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid var(--primary-low);
+  border-radius: var(--d-border-radius);
+}
+
+/* 手机那条「视频合集 N 个 / 第几集」，点开才是抽屉；桌面隐藏 */
+html body.kpv-on .kpv-coll__bar {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+html body.kpv-on .kpv-coll__bar-thumb {
+  display: flex;
+  flex: 0 0 64px;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--primary-low);
+  color: var(--primary-medium);
+}
+
+html body.kpv-on .kpv-coll__bar-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+html body.kpv-on .kpv-coll__bar-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html body.kpv-on .kpv-coll__bar-title {
+  font-size: var(--font-down-1);
+  font-weight: 600;
+}
+
+html body.kpv-on .kpv-coll__bar-sub {
+  overflow: hidden;
+  color: var(--primary-medium);
+  font-size: var(--font-down-2);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+html body.kpv-on .kpv-coll__bar .d-icon {
+  color: var(--primary-medium);
+}
+
+html.kpv-sheet-open body {
+  overflow: hidden;
+}
+
+html body.kpv-on .kpv-coll__backdrop,
+html body.kpv-on .kpv-coll__close {
+  display: none;
+}
+
+/* 窄屏：合集收进底部抽屉 */
+@media (max-width: 68.74rem) {
+  html body.kpv-on .kpv-coll {
+    padding: 10px 12px;
+  }
+
+  html body.kpv-on .kpv-coll__sheet {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1300;
+    display: flex;
+    flex-direction: column;
+    max-height: 70vh;
+    padding: 12px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+    background: var(--secondary);
+    border-top: 1px solid var(--primary-low);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -10px 30px rgb(0 0 0 / 0.3);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+  }
+
+  html body.kpv-on .kpv-coll__handle {
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 16px;
+    border-radius: 2px;
+    background: var(--primary-low);
+  }
+
+  html body.kpv-on .kpv-coll.is-open .kpv-coll__sheet {
+    transform: translateY(0);
+  }
+
+  html body.kpv-on .kpv-coll.is-open .kpv-coll__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1299;
+    display: block;
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  html body.kpv-on .kpv-coll__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-left: auto;
+    border: 0;
+    border-radius: 50%;
+    background: var(--primary-very-low);
+    color: var(--primary-medium);
+  }
+
+  html body.kpv-on .kpv-coll__list {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html body.kpv-on .kpv-coll__sheet {
+    overscroll-behavior: contain;
+  }
+}
+
+/* 宽屏：合集不再占右栏，改成播放器下面那排分集胶囊（Gemini 方案 B）；
+   大卡片和底部抽屉只留给窄屏 */
+@media (min-width: 68.75rem) {
+  html body.kpv-on .kpv-coll,
+  html body.kpv-on .kpv-classic .kpv-coll {
+    display: none !important;
+  }
+}
+
+/* 分集胶囊排：P1 + 这一集自己的标题，一排放不下就横向滚 */
+html body.kpv-on .kpv-pills {
+  display: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--primary-low);
+  border-radius: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-low) transparent;
+}
+
+html body.kpv-on .kpv-pills {
+  cursor: grab;
+  scroll-behavior: smooth;
+}
+
+html body.kpv-on .kpv-pills.is-dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+  user-select: none;
+}
+
+html body.kpv-on .kpv-pills::-webkit-scrollbar {
+  height: 8px;
+}
+
+html body.kpv-on .kpv-pills::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-medium);
+}
+
+html body.kpv-on .kpv-pills::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--primary-low);
+}
+
+@media (min-width: 68.75rem) {
+  html body.kpv-on .kpv-pills {
+    display: flex;
+  }
+}
+
+html body.kpv-on .kpv-pill {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  max-width: 340px;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: var(--primary-very-low);
+  color: var(--primary-high);
+  font-size: var(--font-down-1);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+html body.kpv-on .kpv-pill:hover {
+  border-color: var(--primary-low);
+  color: var(--primary);
+}
+
+html body.kpv-on .kpv-pill.is-active {
+  background: var(--tertiary);
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+html body.kpv-on .kpv-pill__n {
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--tertiary-low);
+  color: var(--tertiary);
+  font-size: var(--font-down-2);
+  font-weight: 600;
+}
+
+html body.kpv-on .kpv-pill.is-active .kpv-pill__n {
+  background: var(--secondary);
+  color: var(--tertiary);
+}
+
+html body.kpv-on .kpv-pill__t {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 沉浸是手机上的竖屏浏览方式，PC 不放这个入口 */
+@media (min-width: 68.75rem) {
+  html body.kpv-on .kpv-act {
+    display: none !important;
+  }
+}
+
+/* 话题级按钮（管理 / 分享 / 收藏 / 更多 / 通知）本来是页脚内容，
+   核心把它排在标题下面，在视频版式里挪到评论区之后 */
+html body.kpv-on .nested-view {
+  display: flex;
+  flex-direction: column;
+}
+
+html body.kpv-on .nested-view > * {
+  min-width: 0;
+}
+
+html body.kpv-on .nested-view__topic-actions {
+  order: 9;
+}
+
+/* 列表本体：抽屉和右栏共用，一条一个缩略图 + 标题 */
+html body.kpv-on .kpv-coll__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+html body.kpv-on .kpv-coll__head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+html body.kpv-on .kpv-coll__title {
+  font-size: var(--font-0);
+  font-weight: 600;
+}
+
+html body.kpv-on .kpv-coll__count {
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+}
+
+html body.kpv-on .kpv-coll__item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+html body.kpv-on .kpv-coll__item:hover {
+  background: var(--primary-very-low);
+}
+
+html body.kpv-on .kpv-coll__item.is-current {
+  background: var(--primary-low);
+}
+
+html body.kpv-on .kpv-coll__thumb {
+  position: relative;
+  display: flex;
+  flex: 0 0 96px;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 54px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--primary-low);
+  color: var(--primary-medium);
+}
+
+html body.kpv-on .kpv-coll__thumb .d-icon {
+  font-size: var(--font-up-1);
+}
+
+html body.kpv-on .kpv-coll__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+html body.kpv-on .kpv-coll__dur {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgb(0 0 0 / 0.7);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+html body.kpv-on .kpv-coll__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+html body.kpv-on .kpv-coll__name {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--primary);
+  font-size: var(--font-down-1);
+  font-weight: 600;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+html body.kpv-on .kpv-coll__sub {
+  color: var(--primary-medium);
+  font-size: var(--font-down-2);
+}
+
+/* ---------- 话题地图：统计跟动作排重复，设计稿里没有 ---------- */
+html body.kpv-on .nested-view__topic-map {
+  display: none;
+}
+
+/* ---------- 手机：播放器顶到内容区两边 ---------- */
+@media (max-width: 59.99rem) {
+  html body.kpv-on .kpv {
+    margin-right: -8px;
+    margin-left: -8px;
+  }
+
+  html body.kpv-on .kpv__stage {
+    border-radius: 0;
+  }
+}
+
+/* 桌面宽度跟普通话题页一致（主题默认列宽），不再单独收窄 */
+
+
+
+
+
+
+/* 观看数：跟发布时间同一档小字，不抢视线 */
+html body.kpv-on .kpv-views {
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+  white-space: nowrap;
+}
+
+/* 沉浸按钮跟原生动作键同一外观：无边框、无底色 */
+html body.kpv-on .kpann-immersive {
+  border: 0;
+  background: transparent;
+  color: var(--primary-medium);
+  padding: 0 8px;
+}
+
+html body.kpv-on .kpann-immersive:hover {
+  background: var(--primary-low);
+  color: var(--primary);
+  text-decoration: none;
+}
+
+/* 作者行（这是我们自己的容器）：第一行 名字+头衔，第二行 观看 • 时间 */
+html body.kpv-on .kpv-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+
+html body.kpv-on .kpv-meta-row .names {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 主题把 .user-title 设成会占满整行的块（还带 float），压掉这三样，头衔才能跟在名字后面 */
+html body.kpv-on .kpv-meta-row .names .user-title {
+  display: inline-block;
+  flex: 0 0 auto;
+  float: none;
+  width: auto;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+/* 编辑历史那个铅笔排到最后 */
+html body.kpv-on .kpv-meta-row .post-info.edits {
+  order: 4;
+}
+
+html body.kpv-on .kpv-meta-row .post-info.post-date {
+  order: 3;
+}
+
+html body.kpv-on .kpv-meta-row .post-infos {
+  display: flex;
+  order: 2;
+  align-items: center;
+  gap: 6px;
+}
+
+html body.kpv-on .kpv-views {
+  order: 1;
+}
+
+html body.kpv-on .kpv-views::after {
+  margin-left: 6px;
+  color: var(--primary-low-mid);
+  content: "•";
+}
+/* 元信息那块只是包了一层的容器，摊平后名字和「观看 • 时间」才能各占一行 */
+html body.kpv-on .kpv-meta-row .topic-meta-data {
+  display: contents;
+}
