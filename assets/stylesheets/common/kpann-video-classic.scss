@@ -127,7 +127,3 @@ html body.kpv-on #post_1 .cooked > p:has(> iframe) {
   }
 }
 
-/* 平铺页：核心自己就有「浏览量」，插件这条不再重复显示 */
-html body.kpv-on #post_1 .kpv-views {
-  display: none;
-}
