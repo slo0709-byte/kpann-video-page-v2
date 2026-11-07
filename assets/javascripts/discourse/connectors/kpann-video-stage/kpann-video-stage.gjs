@@ -110,9 +110,85 @@ export default class KpannVideoStage extends Component {
   // 平铺页的动作排（post-menu-buttons DAG）靠这个拿到当前这条视频
   @action
   selectPill(index) {
+    // 刚拖完的那一下不算点击
+    if (this.dragEndedAt && Date.now() - this.dragEndedAt < 250) {
+      return;
+    }
     if (this.topic?.id != null) {
       this.kpvPlayer.select(this.topic.id, index);
     }
+  }
+
+  // 胶囊排：按住鼠标可以拖着横滑（手机上原生滑动就够，这里不接管）
+  // 不要一按下就 setPointerCapture：那样 click 会落到容器上，胶囊就点不动了
+  @action
+  startDrag(event) {
+    if (event.pointerType === "touch") {
+      return;
+    }
+    const el = event.currentTarget;
+    this.drag = {
+      x: event.clientX,
+      left: el.scrollLeft,
+      el,
+      id: event.pointerId,
+      captured: false,
+    };
+  }
+
+  @action
+  moveDrag(event) {
+    if (!this.drag) {
+      return;
+    }
+    const dx = event.clientX - this.drag.x;
+    if (!this.drag.captured) {
+      if (Math.abs(dx) <= 4) {
+        return;
+      }
+      // 真正开始拖了才接管指针，普通点击不受影响
+      this.drag.captured = true;
+      this.drag.el.setPointerCapture?.(this.drag.id);
+      this.drag.el.classList.add("is-dragging");
+    }
+    this.drag.el.scrollLeft = this.drag.left - dx;
+  }
+
+  @action
+  endDrag() {
+    if (!this.drag) {
+      return;
+    }
+    if (this.drag.captured) {
+      this.drag.el.releasePointerCapture?.(this.drag.id);
+      this.drag.el.classList.remove("is-dragging");
+      // 只有真的拖动过才屏蔽紧接着的那次点击
+      this.dragEndedAt = Date.now();
+    }
+    this.drag = null;
+  }
+
+  // 鼠标滚轮 / 触控板：在胶囊排上时把纵向滚动转成横向，不用按住拖
+  @action
+  onWheel(event) {
+    const el = event.currentTarget;
+    if (el.scrollWidth <= el.clientWidth) {
+      return;
+    }
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ? event.deltaX
+      : event.deltaY;
+    if (delta === 0) {
+      return;
+    }
+    const next = el.scrollLeft + delta;
+    const max = el.scrollWidth - el.clientWidth;
+    // 已经滚到头的方向就别吃掉页面滚动
+    if ((delta < 0 && el.scrollLeft <= 0) || (delta > 0 && el.scrollLeft >= max)) {
+      return;
+    }
+    event.preventDefault();
+    el.scrollLeft = Math.max(0, Math.min(max, next));
   }
 
 
@@ -235,7 +311,14 @@ export default class KpannVideoStage extends Component {
         </div>
 
         {{#if this.showPills}}
-          <div class="kpv-pills">
+          <div
+            class="kpv-pills"
+            {{on "pointerdown" this.startDrag}}
+            {{on "pointermove" this.moveDrag}}
+            {{on "pointerup" this.endDrag}}
+            {{on "pointercancel" this.endDrag}}
+            {{on "wheel" this.onWheel}}
+          >
             {{#each this.pills as |pill|}}
               <button
                 type="button"

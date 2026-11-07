@@ -563,27 +563,31 @@ html body.kpv-on .kpv-coll__sub {
   font-size: var(--font-down-2);
 }
 
-/* ---------- 分集胶囊排：P1 + 这一集自己的标题 ----------
-   放不下就折行，不做横向滚动：横向滚只有拖动能用、
-   鼠标滚轮和触控板横滑都进不去，用户会当成坏了。 */
+/* ---------- 分集胶囊排：P1 + 这一集自己的标题，一排放不下就横向滚 ----------
+   滚动条可见（8px），并且不隐藏，鼠标能直接拖；滚轮在组件里接管成横向。 */
 html body.kpv-on .kpv-pills {
   display: none;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   margin: 10px 0 0;
-  padding: 10px 12px;
-  max-height: 176px;
-  overflow-x: visible;
-  overflow-y: auto;
+  padding: 10px 12px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--primary-low);
   border-radius: 12px;
   scrollbar-width: thin;
   scrollbar-color: var(--primary-low) transparent;
+  cursor: grab;
+}
+
+html body.kpv-on .kpv-pills.is-dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 html body.kpv-on .kpv-pills::-webkit-scrollbar {
-  width: 8px;
+  height: 8px;
 }
 
 html body.kpv-on .kpv-pills::-webkit-scrollbar-thumb {
