@@ -110,66 +110,11 @@ export default class KpannVideoStage extends Component {
   // 平铺页的动作排（post-menu-buttons DAG）靠这个拿到当前这条视频
   @action
   selectPill(index) {
-    // 刚拖完的那一下不算点击
-    if (this.dragEndedAt && Date.now() - this.dragEndedAt < 250) {
-      return;
-    }
     if (this.topic?.id != null) {
       this.kpvPlayer.select(this.topic.id, index);
     }
   }
 
-  // 胶囊排：按住鼠标可以拖着横滚（手机上原生滑动就够，这里不接管）
-  // 注意不要一按下就 setPointerCapture：那样 click 会落到容器上，胶囊就点不动了
-  @action
-  startDrag(event) {
-    if (event.pointerType === "touch") {
-      return;
-    }
-    const el = event.currentTarget;
-    this.drag = {
-      x: event.clientX,
-      left: el.scrollLeft,
-      el,
-      id: event.pointerId,
-      captured: false,
-    };
-    this.dragged = false;
-  }
-
-  @action
-  moveDrag(event) {
-    if (!this.drag) {
-      return;
-    }
-    const dx = event.clientX - this.drag.x;
-    if (!this.drag.captured) {
-      if (Math.abs(dx) <= 4) {
-        return;
-      }
-      // 真正开始拖了才接管指针，普通点击不受影响
-      this.drag.captured = true;
-      this.dragged = true;
-      this.drag.el.setPointerCapture?.(this.drag.id);
-      this.drag.el.classList.add("is-dragging");
-    }
-    this.drag.el.scrollLeft = this.drag.left - dx;
-  }
-
-  @action
-  endDrag() {
-    if (!this.drag) {
-      return;
-    }
-    const moved = this.drag.captured;
-    if (moved) {
-      this.drag.el.releasePointerCapture?.(this.drag.id);
-      this.drag.el.classList.remove("is-dragging");
-      // 只有真的拖动过才屏蔽紧接着的那次点击；普通点击不做处理
-      this.dragEndedAt = Date.now();
-    }
-    this.drag = null;
-  }
 
   // 给 body 挂一个标记类：样式一律以它为作用域，桌面/手机、平铺/嵌套都通用
   @action
@@ -290,13 +235,7 @@ export default class KpannVideoStage extends Component {
         </div>
 
         {{#if this.showPills}}
-          <div
-            class="kpv-pills"
-            {{on "pointerdown" this.startDrag}}
-            {{on "pointermove" this.moveDrag}}
-            {{on "pointerup" this.endDrag}}
-            {{on "pointercancel" this.endDrag}}
-          >
+          <div class="kpv-pills">
             {{#each this.pills as |pill|}}
               <button
                 type="button"
