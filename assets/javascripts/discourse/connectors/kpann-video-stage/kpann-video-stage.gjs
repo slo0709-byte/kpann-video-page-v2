@@ -1,4 +1,5 @@
 import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
@@ -14,6 +15,11 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 // 这里只做渲染，不搬任何原生节点，也不在渲染后改 DOM。
 export default class KpannVideoStage extends Component {
   @service siteSettings;
+
+  // 播放器自己那个「全屏」按钮的状态。
+  // B 站 etc 自带的全屏只能在它自己的 iframe 里放大（网页全屏），落在 16:9 里等于没反应，
+  // 所以这里对整个播放器容器做系统全屏：容器是本页面的节点，同源，不用跨域授权。
+  @tracked isFullscreen = false;
   @service kpvPlayer;
 
   get topic() {
@@ -52,8 +58,17 @@ export default class KpannVideoStage extends Component {
     return this.currentVideo?.embed || this.topic?.kpann_embed_url || null;
   }
 
+  get provider() {
+    return this.currentVideo?.provider || null;
+  }
+
   get title() {
     return this.currentVideo?.title || this.topic?.title || "视频";
+  }
+
+  // B 站播放器在手机上要能全屏，得给 iframe 补 webkitallowfullscreen 和 encrypted-media
+  get frameAllow() {
+    return "autoplay; fullscreen; webkitallowfullscreen; picture-in-picture; encrypted-media";
   }
 
   // 只有一项：换集时这一项的值变了，keyed each 会重建 iframe 元素
@@ -61,15 +76,16 @@ export default class KpannVideoStage extends Component {
     return this.src ? [this.src] : [];
   }
 
-  // PC 播放器下面那排分集胶囊（Gemini 方案 B）：P1 + 这一集自己的真标题
+  // PC 播放器下面那排分集胶囊（Gemini 方案 B）：P1 + 这一集自己的真标题。
+  // 没抓到元数据时给「第 N 集」，不拿平台名当标题。
   get pills() {
     return this.videos.map((video, index) => ({
       index,
       label: `P${index + 1}`,
       title:
-        video.title ||
+        (typeof video.title === "string" && video.title.trim()) ||
         this.pillDuration(video.duration) ||
-        (video.provider === "youtube" ? "YouTube" : "B 站"),
+        `第 ${index + 1} 集`,
       active: index === this.index,
     }));
   }
@@ -91,7 +107,7 @@ export default class KpannVideoStage extends Component {
     return getURL(`/shorts?topic=${this.topic?.id}&v=${this.index}`);
   }
 
-  // 平铺页的动作排（post-menu__after connector）靠这个拿到当前这条视频
+  // 平铺页的动作排（post-menu-buttons DAG）靠这个拿到当前这条视频
   @action
   selectPill(index) {
     // 刚拖完的那一下不算点击
@@ -155,7 +171,7 @@ export default class KpannVideoStage extends Component {
     this.drag = null;
   }
 
-  // 给 body 挂一个标记类：样式一律以它为作用域，桌面/手机、嵌套/平铺都通用
+  // 给 body 挂一个标记类：样式一律以它为作用域，桌面/手机、平铺/嵌套都通用
   @action
   markPage() {
     document.body.classList.add("kpv-on");
@@ -167,16 +183,82 @@ export default class KpannVideoStage extends Component {
     if (!Number.isNaN(index) && this.topic?.id != null) {
       this.kpvPlayer.select(this.topic.id, index);
     }
+
+    // 用系统返回键 / Esc 退出全屏时，把按钮状态一起复位
+    this.onFullscreenChange = () => {
+      this.isFullscreen = !!(
+        document.fullscreenElement || document.webkitFullscreenElement
+      );
+    };
+    document.addEventListener("fullscreenchange", this.onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", this.onFullscreenChange);
+  }
+
+  // 全屏：先试系统 API（对整个播放器容器），失败就退回 CSS 铺满整个视口
+  @action
+  async toggleFullscreen(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    const stage =
+      event?.currentTarget?.closest?.(".kpv") ||
+      document.querySelector("body.kpv-on .kpv");
+
+    if (this.isFullscreen) {
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      } catch (e) {
+        // 退出失败就走下面的 CSS 状态
+      }
+      this.isFullscreen = false;
+      return;
+    }
+
+    if (stage) {
+      try {
+        const request =
+          stage.requestFullscreen ||
+          stage.webkitRequestFullscreen ||
+          stage.mozRequestFullScreen ||
+          stage.msRequestFullscreen;
+        if (request) {
+          await request.call(stage);
+          this.isFullscreen = true;
+          return;
+        }
+      } catch (e) {
+        // 系统全屏被拒（iOS Safari 等）：落到下面的 CSS 铺满
+      }
+    }
+
+    this.isFullscreen = true;
   }
 
   @action
   unmarkPage() {
     document.body.classList.remove("kpv-on");
+    this.kpvPlayer.setTopic(null);
+    if (this.onFullscreenChange) {
+      document.removeEventListener("fullscreenchange", this.onFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        this.onFullscreenChange
+      );
+      this.onFullscreenChange = null;
+    }
   }
 
   <template>
     {{#if this.src}}
-      <div class="kpv" {{didInsert this.markPage}} {{willDestroy this.unmarkPage}}>
+      <div
+        class="kpv {{if this.isFullscreen 'is-fullscreen'}}"
+        {{didInsert this.markPage}}
+        {{willDestroy this.unmarkPage}}
+      >
         <div class="kpv__stage">
           {{! 换集时重建 iframe（不要改同一个元素的 src）：改 src 会往浏览器历史里插一条，
               后退就会一集一集往回走。新建元素不产生历史条目。 }}
@@ -185,12 +267,26 @@ export default class KpannVideoStage extends Component {
               class="kpv__frame"
               src={{src}}
               title={{this.title}}
-              allow="autoplay; fullscreen; picture-in-picture"
+              allow={{this.frameAllow}}
               allowfullscreen
+              webkitallowfullscreen
+              mozallowfullscreen
               frameborder="no"
               scrolling="no"
             ></iframe>
           {{/each}}
+
+          {{! 全屏按钮：B 站自带的是「网页全屏」，关在 16:9 里等于没反应，
+              这里给一个真系统全屏（对 .kpv 容器，同源）。只在手机显示。 }}
+          <button
+            type="button"
+            class="kpv__fs"
+            title={{if this.isFullscreen "退出全屏" "全屏"}}
+            aria-label={{if this.isFullscreen "退出全屏" "全屏"}}
+            {{on "click" this.toggleFullscreen}}
+          >
+            {{dIcon (if this.isFullscreen "compress" "expand")}}
+          </button>
         </div>
 
         {{#if this.showPills}}
@@ -218,6 +314,3 @@ export default class KpannVideoStage extends Component {
     {{/if}}
   </template>
 }
-
-
-

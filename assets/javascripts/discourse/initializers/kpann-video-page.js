@@ -1,16 +1,42 @@
 import { apiInitializer } from "discourse/lib/api";
 import KpannImmersiveButton from "discourse/plugins/kpann-video-page/discourse/components/kpann-immersive-button";
+import KpannPostViews from "discourse/plugins/kpann-video-page/discourse/components/kpann-post-views";
 
 // 视频页的两件事：
 // 1. 给 body 挂「视频分类」作用域类（列表/内页样式以它为准）
 // 2. 后退规则：从沉浸页退出回当前那条视频的内页；从视频内页后退一次回列表
 export default apiInitializer((api) => {
+  const siteSettings = api.container.lookup("service:site-settings");
+
   // 动作排的「沉浸」按钮：官方 post-menu-buttons DAG，平铺页和嵌套页共用
   api.registerValueTransformer("post-menu-buttons", ({ value }) => {
     value.add("kpann-immersive", KpannImmersiveButton);
   });
 
-  const siteSettings = api.container.lookup("service:site-settings");
+  // 首楼作者行里的「浏览」：核心 post/meta-data.gjs 明确说这里用 DAG，不要放 outlet。
+  // 顺带把编辑铅笔排到最后（设计稿要求），只对视频分类首楼生效。
+  api.registerValueTransformer(
+    "post-meta-data-infos",
+    ({ value, context }) => {
+      const post = context?.post;
+      if (!post) {
+        return;
+      }
+
+      value.add("kpann_views", KpannPostViews, { after: "date" });
+
+      const topic = post.topic;
+      const id = Number(topic?.category?.id ?? topic?.category_id);
+      const ids = String(siteSettings.kpann_gallery_categories || "")
+        .split("|")
+        .filter(Boolean)
+        .map(Number);
+
+      if (post.post_number === 1 && id && ids.includes(id)) {
+        value.reposition("edits_indicator", { after: "read_indicator" });
+      }
+    }
+  );
 
   const galleryCategoryIds = () =>
     String(siteSettings.kpann_gallery_categories || "")

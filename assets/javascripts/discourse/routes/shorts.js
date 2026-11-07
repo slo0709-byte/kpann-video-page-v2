@@ -33,7 +33,7 @@ export default class ShortsRoute extends DiscourseRoute {
     }
     const data = await ajax(`/c/${categoryId}.json`, { data: { page: 0 } });
 
-    return (data.topic_list?.topics || [])
+    const topics = (data.topic_list?.topics || [])
       .filter((topic) => topic.kpann_embed_url)
       .map((topic) => ({
         id: topic.id,
@@ -73,6 +73,52 @@ export default class ShortsRoute extends DiscourseRoute {
         posterAvatar: (topic.kpann_poster_avatar || "").replace("{size}", "96"),
         posterId: topic.kpann_poster_id || null,
       }));
+
+    // 补抓在后台跑，不 await：补抓要打外站，慢的时候要好几秒，不能卡首屏
+    this.refreshMissingMeta(topics);
+
+    return topics;
+  }
+
+  // 个别集次没抓到标题/封面（B 站偶发反爬、YouTube oembed 抽风）：
+  // 让服务端按需补抓一次（服务端自己限频），补到了就换成新的，没补到就走客户端的兵底样式。
+  async refreshMissingMeta(topics) {
+    if (!Array.isArray(topics)) {
+      return topics;
+    }
+
+    const needs = topics
+      .filter((topic) =>
+        topic.videos.some((video) => !video.title || !video.cover)
+      )
+      .slice(0, 5);
+
+    await Promise.all(
+      needs.map(async (topic) => {
+        try {
+          const result = await ajax(
+            `/kpann-video-page/metadata/${topic.id}.json`
+          );
+          if (!Array.isArray(result?.videos) || !result.videos.length) {
+            return;
+          }
+          topic.videos = result.videos;
+          topic.videosJson = JSON.stringify(result.videos);
+          topic.cover = topic.cover || result.cover || result.videos[0]?.cover || null;
+          // 幻灯片已经渲染出来了：把合集数据替换掉，点开合集就是补好的标题/封面
+          const slide = document.querySelector(
+            `.kp-slide[data-topic-id="${topic.id}"]`
+          );
+          if (slide) {
+            slide.dataset.videos = topic.videosJson;
+          }
+        } catch (e) {
+          // 补抓失败不影响页面：继续用现有的数据
+        }
+      })
+    );
+
+    return topics;
   }
 
   waitForTrack() {
@@ -165,8 +211,14 @@ export default class ShortsRoute extends DiscourseRoute {
     iframe.className = "kp-slide__frame";
     iframe.src = embed;
     iframe.setAttribute("frameborder", "0");
-    iframe.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture");
+    iframe.setAttribute(
+      "allow",
+      "autoplay; encrypted-media; picture-in-picture; fullscreen"
+    );
     iframe.setAttribute("allowfullscreen", "");
+    // B 站播放器在手机上要能全屏，光有 allowfullscreen 不够
+    iframe.setAttribute("webkitallowfullscreen", "");
+    iframe.setAttribute("mozallowfullscreen", "");
     const reveal = () => iframe.classList.add("kp-frame-ready");
     iframe.addEventListener("load", () =>
       requestAnimationFrame(() => requestAnimationFrame(reveal))
@@ -186,6 +238,18 @@ export default class ShortsRoute extends DiscourseRoute {
   }
 
   // 一帖多视频：底部弹出合集列表
+  // 合集里一条的标题：没抓到元数据时给「第 N 集」，不拿平台名当标题
+  collectionTitle(video, index, slide) {
+    const own = typeof video.title === "string" ? video.title.trim() : "";
+    if (own) {
+      return own;
+    }
+    const topicTitle = slide
+      ?.querySelector(".kp-slide__title")
+      ?.textContent?.trim();
+    return topicTitle ? `${topicTitle} · 第 ${index + 1} 集` : `第 ${index + 1} 集`;
+  }
+
   openCollection(slide) {
     if (!slide) {
       return;
@@ -221,15 +285,33 @@ export default class ShortsRoute extends DiscourseRoute {
       if (video.embed === current) {
         item.classList.add("is-current");
       }
-      const idx = document.createElement("span");
-      idx.className = "kp-collection__index";
-      idx.textContent = String(index + 1);
+      const thumb = document.createElement("span");
+      thumb.className = "kp-collection__thumb";
+      if (video.cover) {
+        const img = document.createElement("img");
+        img.src = video.cover;
+        img.alt = "";
+        img.loading = "lazy";
+        thumb.appendChild(img);
+      } else {
+        const idx = document.createElement("span");
+        idx.className = "kp-collection__index";
+        idx.textContent = String(index + 1);
+        thumb.appendChild(idx);
+      }
       const meta = document.createElement("span");
       meta.className = "kp-collection__meta";
+      const name = document.createElement("span");
+      name.className = "kp-collection__name";
+      name.textContent = this.collectionTitle(video, index, slide);
+      const sub = document.createElement("span");
+      sub.className = "kp-collection__sub";
       const provider = video.provider === "youtube" ? "YouTube" : "B站";
       const duration = video.duration ? this.formatDuration(video.duration) : "";
-      meta.textContent = duration ? `${provider} · ${duration}` : provider;
-      item.appendChild(idx);
+      sub.textContent = duration ? `${provider} · ${duration}` : provider;
+      meta.appendChild(name);
+      meta.appendChild(sub);
+      item.appendChild(thumb);
       item.appendChild(meta);
       item.addEventListener("click", () => {
         this.switchVideo(slide, video.embed);

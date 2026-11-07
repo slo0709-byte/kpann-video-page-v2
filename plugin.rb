@@ -373,9 +373,12 @@ end
 
 after_initialize do
   require_relative "app/controllers/kpann_video_page/shorts_controller"
+  require_relative "app/controllers/kpann_video_page/metadata_controller"
 
   Discourse::Application.routes.append do
     get "/shorts" => "kpann_video_page/shorts#show"
+    # 前台发现某一条视频没抓到标题/封面时，来这里让它重试一次
+    get "/kpann-video-page/metadata/:topic_id" => "kpann_video_page/metadata#show"
   end
 
   # 作者取 1 楼作者（first_post.user），不是帖子创建者：

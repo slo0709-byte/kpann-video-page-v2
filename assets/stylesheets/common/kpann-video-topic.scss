@@ -1,13 +1,11 @@
 /* ============================================================
    视频帖内页版式（/t/… 话题页，仅视频分类生效）
    ------------------------------------------------------------
-   骨架：播放器 → 标题 → 阅读状态/关注 → 作者行 → 正文 → 动作排 → 合集 → 评论
-   · 作用域：html body.kpv-on；.kpv 是插件在 kpann-video-stage
-     outlet 里渲染的播放器，只有视频帖才有，所以别的帖子不会命中。
-   · 骨架里的每一块都是核心原生节点（.nested-view__*），插件只新增
-     播放器、合集列表、动作排里的「沉浸」入口这三块。
-   · 评论区不加任何规则。
-   · 颜色、圆角、字号走主题变量，不写死色值。
+   插件只画自己的四块：播放器（.kpv）、分集胶囊（.kpv-pills）、
+   合集（.kpv-coll）、作者行（.kpv-author）。
+   其它一切（标题、正文、动作排、楼层、评论区）都是核心节点，一条规则都不加。
+   作者行本身是官方 wrapper outlet `post-metadata` 里的插件组件。
+   颜色、圆角、字号一律走主题变量，不写死色值。
    ============================================================ */
 
 /* ---------- 播放器 ---------- */
@@ -32,7 +30,94 @@ html body.kpv-on .kpv__frame {
   border: 0;
 }
 
-/* ---------- 标题 ---------- */
+/* 全屏按钮：放在播放器右下角，盖在 iframe 上。
+   B 站自带的那个是「网页全屏」，关在 16:9 里等于没反应，
+   所以这里给一个真系统全屏（对 .kpv 容器，同源，不用跨域授权）。
+   PC 不放：桌面浏览器里 B 站自带的全屏一般能用。 */
+html body.kpv-on .kpv__fs {
+  position: absolute;
+  right: 8px;
+  bottom: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.5);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+html body.kpv-on .kpv__fs .d-icon {
+  color: #fff;
+  font-size: 15px;
+}
+
+html body.kpv-on .kpv__fs:active {
+  background: rgb(0 0 0 / 0.72);
+}
+
+@media (min-width: 68.75rem) {
+  html body.kpv-on .kpv__fs {
+    display: none;
+  }
+}
+
+/* 系统全屏生效时，容器本身也要铺满，否则 iframe 只放大框内内容 */
+html body.kpv-on .kpv:fullscreen,
+html body.kpv-on .kpv.is-fullscreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  background: #000;
+}
+
+html body.kpv-on .kpv:fullscreen .kpv__stage,
+html body.kpv-on .kpv.is-fullscreen .kpv__stage {
+  width: 100%;
+  max-width: 100vw;
+  height: 100%;
+  max-height: 100vh;
+  aspect-ratio: auto;
+  border-radius: 0;
+  overflow: visible;
+}
+
+/* CSS 兜底的全屏（iOS Safari 不认系统 API 时走这条） */
+html body.kpv-on .kpv.is-fullscreen:not(:fullscreen) {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+}
+
+html body.kpv-on .kpv.is-fullscreen .kpv__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+html body.kpv-on .kpv.is-fullscreen .kpv__fs {
+  right: 12px;
+  bottom: 16px;
+  background: rgb(0 0 0 / 0.6);
+}
+
+/* 全屏里不显示分集胶囊，退出后恢复 */
+html body.kpv-on .kpv:fullscreen .kpv-pills,
+html body.kpv-on .kpv.is-fullscreen .kpv-pills {
+  display: none;
+}
+
+/* ---------- 嵌套视图（op 模板由 core-patches 接住，类名与核心一致） ---------- */
 html body.kpv-on .nested-view__header {
   margin: 0 0 10px;
   padding: 0;
@@ -50,7 +135,7 @@ html body.kpv-on .nested-view__header .topic-category {
   font-size: var(--font-down-1);
 }
 
-/* ---------- 阅读状态 + 关注（原生 NestedTopicActions 那一行） ---------- */
+/* 阅读状态 + 关注那一行（原生 NestedTopicActions） */
 html body.kpv-on .nested-view__topic-actions {
   display: flex;
   flex-wrap: wrap;
@@ -63,7 +148,8 @@ html body.kpv-on .nested-view__topic-actions {
 /* 话题底部那排大按钮在视频帖里不要：分享/书签/举报/管理都在动作排的「⋯」里，
    通知级别、回复、管理在右下角原生浮层上，功能没少。 */
 html body.kpv-on .nested-view__topic-actions .topic-footer-main-buttons {
-  display: none;
+  /* 核心用 #topic-footer-buttons 这个 id 选择器给了 display，这里必须 !important 才盖得住 */
+  display: none !important;
 }
 
 html body.kpv-on .nested-view__topic-actions .notifications-button-footer {
@@ -104,7 +190,6 @@ html body.kpv-on .nested-view__topic-actions .reason .btn {
   font-size: var(--font-down-1);
 }
 
-/* ---------- 作者行：原生头像 + 原生元信息，桌面也排成「头像 + 一行信息」 ---------- */
 html body.kpv-on .nested-view__op {
   margin: 0 0 6px;
   padding: 0;
@@ -117,7 +202,6 @@ html body.kpv-on .nested-view__op-row > .topic-avatar img.avatar {
   height: 38px;
 }
 
-/* ---------- 正文：视频帖首楼只有播放器，正文里的 iframe 不重复渲染 ---------- */
 html body.kpv-on .nested-view__op-content {
   margin-top: 2px;
 }
@@ -133,21 +217,26 @@ html body.kpv-on .nested-view__op-content .cooked .youtube-onebox {
   display: none;
 }
 
-
+/* 嵌套页的话题统计条同理不要 */
+html body.kpv-on .nested-view__topic-map {
+  display: none;
+}
 /* ---------- 正文折叠：超过后台设置的字数收成 3 行 + 展开全文 ----------
-   按钮由 post-content-cooked-html 的 __after connector 提供，
-   折叠状态只看按钮自己有没有 .is-open，不改核心组件的 class */
-html body.kpv-on :has(> .kpv-body__toggle:not(.is-open)) > .cooked,
-html body.kpv-on .cooked:has(> .kpv-body__toggle:not(.is-open)),
-html body.kpv-on .nested-view__op-content:has(.kpv-body__toggle:not(.is-open)) .cooked {
+   按钮由 post-content-cooked-html 的 __after connector 提供，挂在 .cooked 的
+   同一个父级里（按钮和 .cooked 是并列的两个兄弟），所以用 :has(> 按钮) 选中兄弟
+   .cooked，不是选中按钮的父级。
+   折叠状态只看按钮自己有没有 .is-open，不改核心组件的 class。 */
+html body.kpv-on .post__contents:has(> .kpv-body__toggle:not(.is-open)) > .cooked,
+html body.kpv-on .topic-body:has(> .kpv-body__toggle:not(.is-open)) > .cooked,
+html body.kpv-on .nested-view__op-content:has(> .kpv-body__toggle:not(.is-open)) > .cooked {
   position: relative;
   max-height: calc(1.6em * 3);
   overflow: hidden;
 }
 
-html body.kpv-on :has(> .kpv-body__toggle:not(.is-open)) > .cooked::after,
-html body.kpv-on .cooked:has(> .kpv-body__toggle:not(.is-open))::after,
-html body.kpv-on .nested-view__op-content:has(.kpv-body__toggle:not(.is-open)) .cooked::after {
+html body.kpv-on .post__contents:has(> .kpv-body__toggle:not(.is-open)) > .cooked::after,
+html body.kpv-on .topic-body:has(> .kpv-body__toggle:not(.is-open)) > .cooked::after,
+html body.kpv-on .nested-view__op-content:has(> .kpv-body__toggle:not(.is-open)) > .cooked::after {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -170,8 +259,54 @@ html body.kpv-on .kpv-body__toggle {
   cursor: pointer;
 }
 
+/* ---------- 首楼作者行（核心节点，插件只加一条「浏览」） ----------
+   核心默认：头衔自己占一整行（.names .user-title { order: 4; flex-basis: 100% }），
+   .post-infos 又和 .names 并排。
+   视频帖首楼按设计稿改成：第一行 名字 + 头衔，第二行 时间 · 浏览 · 编辑铅笔。
+   只调这一块的换行顺序，不动任何宽度来源（宽度还是 #post_1 .post__body 给的）。 */
+html body.kpv-on .topic-meta-data:has(> .post-infos > .kpann-post-views) {
+  flex-wrap: wrap;
+  align-items: center;
+}
 
-/* ---------- 合集：桌面右栏 340 / 手机底部抽屉 ---------- */
+html body.kpv-on .topic-meta-data:has(> .post-infos > .kpann-post-views) .names {
+  flex: 1 0 100%;
+  align-items: center;
+}
+
+/* 名字那一档是 order:1（主题/装扮插件给的），头衔跟它同档就跟在名字后面；
+   核心原本给的 order:4 + flex-basis:100% 会把头衔挤到下一行 */
+html body.kpv-on .topic-meta-data:has(> .post-infos > .kpann-post-views) .names .user-title {
+  order: 1;
+  flex: 0 0 auto;
+  margin-left: 2px;
+}
+
+html body.kpv-on .topic-meta-data:has(> .post-infos > .kpann-post-views) .post-infos {
+  gap: 6px;
+  align-items: center;
+}
+
+/* 插件加进 .post-infos 的那条「N 浏览」，跟原生时间同一档小字 */
+html body.kpv-on .kpann-post-views {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+  white-space: nowrap;
+}
+
+/* 设计稿里「时间 · 浏览」中间有个点，原生 .post-info 之间没有分隔符 */
+html body.kpv-on .kpann-post-views::before {
+  color: var(--primary-low-mid);
+  content: "·";
+}
+/* 首楼下面那条统计（浏览量 / 回复）跟作者行里的「浏览」重复，设计稿里也没有 */
+html body.kpv-on .post__topic-map {
+  display: none;
+}
+/* ---------- 合集：宽屏是播放器下面那排胶囊，窄屏收进底部抽屉 ---------- */
 html body.kpv-on .kpv-coll {
   margin: 0 0 16px;
   padding: 12px;
@@ -303,129 +438,25 @@ html body.kpv-on .kpv-coll__close {
     color: var(--primary-medium);
   }
 
+  html body.kpv-on .kpv-coll__sheet {
+    overscroll-behavior: contain;
+  }
+
   html body.kpv-on .kpv-coll__list {
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
-
-  html body.kpv-on .kpv-coll__sheet {
-    overscroll-behavior: contain;
-  }
 }
 
-/* 宽屏：合集不再占右栏，改成播放器下面那排分集胶囊（Gemini 方案 B）；
-   大卡片和底部抽屉只留给窄屏 */
+/* 宽屏：合集不再占右栏，改成播放器下面那排分集胶囊；大卡片和底部抽屉只留给窄屏 */
 @media (min-width: 68.75rem) {
-  html body.kpv-on .kpv-coll,
-  html body.kpv-on .kpv-classic .kpv-coll {
+  html body.kpv-on .kpv-coll {
     display: none !important;
   }
 }
 
-/* 分集胶囊排：P1 + 这一集自己的标题，一排放不下就横向滚 */
-html body.kpv-on .kpv-pills {
-  display: none;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 8px;
-  margin: 10px 0 0;
-  padding: 10px 12px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  border: 1px solid var(--primary-low);
-  border-radius: 12px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--primary-low) transparent;
-}
-
-html body.kpv-on .kpv-pills {
-  cursor: grab;
-  scroll-behavior: smooth;
-}
-
-html body.kpv-on .kpv-pills.is-dragging {
-  cursor: grabbing;
-  scroll-behavior: auto;
-  user-select: none;
-}
-
-html body.kpv-on .kpv-pills::-webkit-scrollbar {
-  height: 8px;
-}
-
-html body.kpv-on .kpv-pills::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-medium);
-}
-
-html body.kpv-on .kpv-pills::-webkit-scrollbar-thumb {
-  border-radius: 3px;
-  background: var(--primary-low);
-}
-
-@media (min-width: 68.75rem) {
-  html body.kpv-on .kpv-pills {
-    display: flex;
-  }
-}
-
-html body.kpv-on .kpv-pill {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 6px;
-  max-width: 340px;
-  padding: 6px 14px;
-  border: 1px solid transparent;
-  border-radius: 20px;
-  background: var(--primary-very-low);
-  color: var(--primary-high);
-  font-size: var(--font-down-1);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-html body.kpv-on .kpv-pill:hover {
-  border-color: var(--primary-low);
-  color: var(--primary);
-}
-
-html body.kpv-on .kpv-pill.is-active {
-  background: var(--tertiary);
-  color: var(--secondary);
-  font-weight: 600;
-}
-
-html body.kpv-on .kpv-pill__n {
-  padding: 1px 6px;
-  border-radius: 10px;
-  background: var(--tertiary-low);
-  color: var(--tertiary);
-  font-size: var(--font-down-2);
-  font-weight: 600;
-}
-
-html body.kpv-on .kpv-pill.is-active .kpv-pill__n {
-  background: var(--secondary);
-  color: var(--tertiary);
-}
-
-html body.kpv-on .kpv-pill__t {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 沉浸是手机上的竖屏浏览方式，PC 不放这个入口 */
-@media (min-width: 68.75rem) {
-  html body.kpv-on .kpv-act {
-    display: none !important;
-  }
-}
-
-/* 话题级按钮保持核心位置，不再用 flex order 挪动 */
-
-
-/* 列表本体：抽屉和右栏共用，一条一个缩略图 + 标题 */
+/* 列表本体：抽屉里一条一个缩略图 + 标题 */
 html body.kpv-on .kpv-coll__list {
   display: flex;
   flex-direction: column;
@@ -532,9 +563,100 @@ html body.kpv-on .kpv-coll__sub {
   font-size: var(--font-down-2);
 }
 
-/* ---------- 话题地图：统计跟动作排重复，设计稿里没有 ---------- */
-html body.kpv-on .nested-view__topic-map {
+/* ---------- 分集胶囊排：P1 + 这一集自己的标题，一排放不下就横向滚 ---------- */
+html body.kpv-on .kpv-pills {
   display: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--primary-low);
+  border-radius: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-low) transparent;
+  cursor: grab;
+  scroll-behavior: smooth;
+}
+
+html body.kpv-on .kpv-pills.is-dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+  user-select: none;
+}
+
+html body.kpv-on .kpv-pills::-webkit-scrollbar {
+  height: 8px;
+}
+
+html body.kpv-on .kpv-pills::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--primary-low);
+}
+
+html body.kpv-on .kpv-pills::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-medium);
+}
+
+@media (min-width: 68.75rem) {
+  html body.kpv-on .kpv-pills {
+    display: flex;
+  }
+}
+
+html body.kpv-on .kpv-pill {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  max-width: 340px;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: var(--primary-very-low);
+  color: var(--primary-high);
+  font-size: var(--font-down-1);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+html body.kpv-on .kpv-pill:hover {
+  border-color: var(--primary-low);
+  color: var(--primary);
+}
+
+html body.kpv-on .kpv-pill.is-active {
+  background: var(--tertiary);
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+html body.kpv-on .kpv-pill__n {
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--tertiary-low);
+  color: var(--tertiary);
+  font-size: var(--font-down-2);
+  font-weight: 600;
+}
+
+html body.kpv-on .kpv-pill.is-active .kpv-pill__n {
+  background: var(--secondary);
+  color: var(--tertiary);
+}
+
+html body.kpv-on .kpv-pill__t {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 沉浸是手机上的竖屏浏览方式，PC 不放这个入口；按钮本身是原生 btn，不另画 */
+@media (min-width: 68.75rem) {
+  html body.kpv-on .kpann-immersive {
+    display: none !important;
+  }
 }
 
 /* ---------- 手机：播放器顶到内容区两边 ---------- */
@@ -547,73 +669,4 @@ html body.kpv-on .nested-view__topic-map {
   html body.kpv-on .kpv__stage {
     border-radius: 0;
   }
-}
-
-/* 桌面宽度跟普通话题页一致（主题默认列宽），不再单独收窄 */
-
-
-
-
-
-
-
-/* 沉浸按钮跟原生动作键同一外观：无边框、无底色 */
-html body.kpv-on .kpann-immersive {
-  border: 0;
-  background: transparent;
-  color: var(--primary-medium);
-  padding: 0 8px;
-}
-
-html body.kpv-on .kpann-immersive:hover {
-  background: var(--primary-low);
-  color: var(--primary);
-  text-decoration: none;
-}
-
-/* 作者行（这是我们自己的容器）：第一行 名字+头衔，第二行 观看 • 时间 */
-html body.kpv-on .kpv-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px 6px;
-}
-
-html body.kpv-on .kpv-meta-row .names {
-  display: flex;
-  flex: 1 0 100%;
-  align-items: center;
-  gap: 4px;
-}
-
-/* 主题把 .user-title 设成会占满整行的块（还带 float），压掉这三样，头衔才能跟在名字后面 */
-html body.kpv-on .kpv-meta-row .names .user-title {
-  display: inline-block;
-  flex: 0 0 auto;
-  float: none;
-  width: auto;
-  max-width: 100%;
-  vertical-align: middle;
-}
-
-/* 编辑历史那个铅笔排到最后 */
-html body.kpv-on .kpv-meta-row .post-info.edits {
-  order: 4;
-}
-
-html body.kpv-on .kpv-meta-row .post-info.post-date {
-  order: 3;
-}
-
-html body.kpv-on .kpv-meta-row .post-infos {
-  display: flex;
-  order: 2;
-  align-items: center;
-  gap: 6px;
-}
-
-
-/* 元信息那块只是包了一层的容器，摊平后名字和「观看 • 时间」才能各占一行 */
-html body.kpv-on .kpv-meta-row .topic-meta-data {
-  display: contents;
 }

@@ -165,12 +165,13 @@ export default class KpannVideoCollection extends Component {
     this.open = false;
     this.dragY = 0;
     this.#syncBodyLock();
-    // 只有播放器已经不在视野里时才滚回去；还在视野里就别动页面
+    // 选完这一集：播放器露出来不足三成时才滚回顶部，露得多就别动页面
     const stage = document.querySelector(".kpv__stage");
     if (stage) {
       const rect = stage.getBoundingClientRect();
-      const visible = rect.bottom > 0 && rect.top < window.innerHeight;
-      if (!visible) {
+      const visible = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+      const ratio = rect.height > 0 ? Math.max(0, visible) / rect.height : 0;
+      if (ratio < 0.3) {
         stage.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }

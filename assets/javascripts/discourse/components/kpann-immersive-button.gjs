@@ -11,7 +11,8 @@ export default class KpannImmersiveButton extends Component {
   @service kpvPlayer;
 
   get topic() {
-    return this.kpvPlayer?.topic || this.args.post?.topic;
+    // 帖子自己的 topic 优先：换到别的帖子时 kpvPlayer 里可能还留着上一个视频帖
+    return this.args.post?.topic || this.kpvPlayer?.topic;
   }
 
   get show() {
@@ -46,7 +47,7 @@ export default class KpannImmersiveButton extends Component {
 
   <template>
     {{#if this.show}}
-      <a class="btn btn-default kpann-immersive" href={{this.href}} title="沉浸模式">
+      <a class="btn btn-flat kpann-immersive" href={{this.href}} title="沉浸模式">
         {{dIcon "play"}}
         <span class="d-button-label">沉浸</span>
       </a>
