@@ -398,11 +398,20 @@ after_initialize do
   # 默认不输出，靠官方这个 modifier 开关打开，不自己算一遍权限。
   register_modifier(:serialize_topic_op_likes_data) { true }
 
-  # 沉浸页简介：拿首楼纯文本，去掉标签后截 400 字
+  # 沉浸页简介：拿首楼纯文本，保留段落换行（不要把换行压成空格）
+  # <p> / <br> / </div> 转成换行，其余标签去掉；连续空行压到一个
   add_to_serializer(:topic_list_item, :kpann_excerpt) do
     post = object.first_post
-    text = post&.cooked.to_s.gsub(/<[^>]+>/, " ")
-    CGI.unescapeHTML(text.to_s).squeeze(" ").strip.truncate(400)
+    html = post&.cooked.to_s
+    html = html.gsub(%r{<br\s*/?>}i, "\n")
+    html = html.gsub(%r{</p>}i, "\n\n")
+    html = html.gsub(%r{</div>}i, "\n")
+    html = html.gsub(%r{</li>}i, "\n")
+    text = html.gsub(/<[^>]+>/, "")
+    text = CGI.unescapeHTML(text.to_s)
+    text = text.gsub(/[ \t]+/, " ")           # 行内空白归一
+    text = text.gsub(/\n{3,}/, "\n\n")         # 最多空一行
+    text.strip.truncate(400)
   end
 end
 

@@ -140,6 +140,16 @@
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.86);
   word-break: break-word;
+  /* 段落多的正文要限高，否则会把作者名与标题顶出屏幕 */
+  max-height: 5.2em;
+  overflow: hidden;
+}
+
+/* 正文里的换行与空格要按原样显示（否则一整段挤成一行） */
+.kp-slide__excerpt-text {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .kp-slide__excerpt.is-expanded {

@@ -27,7 +27,11 @@ export default class KpSlideExcerpt extends Component {
     if (!this.needsToggle || this.expanded) {
       return this.text;
     }
-    return this.text.slice(0, this.limit) + "…";
+    // 按字数截，尽量在空白处断开，避免切断半个词
+    const cut = this.text.slice(0, this.limit);
+    const lastSpace = Math.max(cut.lastIndexOf(" "), cut.lastIndexOf("\n"));
+    const body = lastSpace > this.limit * 0.6 ? cut.slice(0, lastSpace) : cut;
+    return body.replace(/\s+$/, "") + "…";
   }
 
   get containerClass() {
