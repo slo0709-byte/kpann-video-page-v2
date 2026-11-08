@@ -171,26 +171,40 @@
   word-break: break-word;
 }
 
-/* 段落多的正文要限高，否则会把作者名与标题顶出屏幕 */
+/* 长正文收起时按「整行」裁，不按 em 高度裁。
+   按高度裁（max-height: 5.2em）时底线落在行中间，最后一行只露上半截字，
+   不管渐变多深都像被切坏；按行数裁就整行进整行出。
+   限高放在 body 这一层，外面的「…展开」按钮才不会被一起裁掉。 */
 .kp-slide__excerpt-body {
   position: relative;
-  max-height: 5.2em;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* 裁切处用渐隐过渡，不要切半行字 */
-.kp-slide__excerpt-body::after {
+/* 渐隐盖住最后一行，配合行尾省略号收尾。
+   只在真的被裁（有「展开」按钮）时才盖，短正文不被压暗。 */
+.kp-slide__excerpt.has-toggle .kp-slide__excerpt-body::after {
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
-  height: 1.6em;
-  background: linear-gradient(to bottom, rgb(0 0 0 / 0), rgb(0 0 0 / 0.62));
+  height: 1.9em;
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0) 0%,
+    rgb(0 0 0 / 0.45) 55%,
+    rgb(0 0 0 / 0.8) 100%
+  );
   content: "";
   pointer-events: none;
 }
 
+/* 展开：解除行数限制，改成可滚动的限高块 */
 .kp-slide__excerpt.is-expanded .kp-slide__excerpt-body {
+  display: block;
+  -webkit-line-clamp: unset;
   max-height: 34vh;
   overflow-y: auto;
 }

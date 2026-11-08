@@ -56,7 +56,9 @@ export default class KpSlideExcerpt extends Component {
   }
 
   get containerClass() {
-    return this.expanded ? "kp-slide__excerpt is-expanded" : "kp-slide__excerpt";
+    // has-toggle：正文真的被裁了才挂，样式据此决定要不要盖渐隐（短正文不被压暗）
+    const base = this.needsToggle ? "kp-slide__excerpt has-toggle" : "kp-slide__excerpt";
+    return this.expanded ? base + " is-expanded" : base;
   }
 
   get toggleLabel() {
