@@ -122,6 +122,32 @@
   right: 70px;
   bottom: 46px;
   color: #fff;
+  /* 白字压在视频上要有底衬。这里只上文字阴影，不加 padding/背景：
+     绝对定位块加 padding 会把它的盒模型撑大，正文容易被顶出屏幕。
+     整屏的暗底由下面的 .kp-slide::after 渐变负责。 */
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.75),
+    0 0 8px rgb(0 0 0 / 0.55);
+}
+
+/* 底部暗底：白字直接压在视频上会看不清，这一层负责衬托。
+   做在整屏这一层，不参与文字块的盒模型；pointer-events: none 不影响播放器手势。 */
+.kp-slide::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: 46%;
+  background: linear-gradient(
+    to top,
+    rgb(0 0 0 / 0.86) 0%,
+    rgb(0 0 0 / 0.55) 38%,
+    rgb(0 0 0 / 0.18) 72%,
+    rgb(0 0 0 / 0) 100%
+  );
+  content: "";
+  pointer-events: none;
 }
 
 .kp-slide__title {
@@ -760,11 +786,17 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   z-index: 0;
 }
 
+/* 播放器铺满整屏。
+   核心有一条全局规则 iframe { max-height: min(1000px, 200vh) }，
+   屏幕高过 1000px 时播放器只画到 1000px，下面露出下一屏的封面，
+   所以这里必须把 max-height/max-width 解掉，不能只写 height: 100%。 */
 .kp-slide__holder .kp-slide__frame {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
   border: 0;
   z-index: 1;
   opacity: 0;
