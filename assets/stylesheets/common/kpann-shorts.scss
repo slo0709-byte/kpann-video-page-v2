@@ -135,6 +135,7 @@
 }
 
 .kp-slide__excerpt {
+  position: relative;
   margin-top: 6px;
   font-size: 13px;
   line-height: 1.5;
@@ -143,6 +144,22 @@
   /* 段落多的正文要限高，否则会把作者名与标题顶出屏幕 */
   max-height: 5.2em;
   overflow: hidden;
+}
+
+/* 裁切处用渐隐过渡，不要切半行字 */
+.kp-slide__excerpt::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1.6em;
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0), rgb(0 0 0 / 0.62));
+  content: "";
+  pointer-events: none;
+}
+
+.kp-slide__excerpt.is-expanded::after {
+  display: none;
 }
 
 /* 纯文本兜底：换行与空格按原样显示 */
