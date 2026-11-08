@@ -183,33 +183,22 @@
   overflow: hidden;
 }
 
-/* 渐隐盖住最后一行，配合行尾省略号收尾。
-   只在真的被裁（有「展开」按钮）时才盖，短正文不被压暗。 */
-.kp-slide__excerpt.has-toggle .kp-slide__excerpt-body::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 1.9em;
-  background: linear-gradient(
-    to bottom,
-    rgb(0 0 0 / 0) 0%,
-    rgb(0 0 0 / 0.45) 55%,
-    rgb(0 0 0 / 0.8) 100%
-  );
-  content: "";
-  pointer-events: none;
-}
+/* 不再在正文框里单独铺一层渐变。
+   那层渐变只有正文栏那么宽（右边还让出 70px 给动作按钮），
+   而视频在它右边还在继续，结果变成一个左右有硬边的深色方块，
+   压得比渐变还抢眼。整屏底部本来就有 .kp-slide::after 的全宽渐变，靠它衬托就够。 */
 
-/* 展开：解除行数限制，改成可滚动的限高块 */
+/* 展开：解除行数限制，正文整体显示。
+   限高兜个底，防超长正文顶出屏幕；滚动手势照常可用但不显示滚动条。 */
 .kp-slide__excerpt.is-expanded .kp-slide__excerpt-body {
   display: block;
   -webkit-line-clamp: unset;
-  max-height: 34vh;
+  max-height: 62vh;
   overflow-y: auto;
+  scrollbar-width: none;
 }
 
-.kp-slide__excerpt.is-expanded .kp-slide__excerpt-body::after {
+.kp-slide__excerpt.is-expanded .kp-slide__excerpt-body::-webkit-scrollbar {
   display: none;
 }
 
@@ -966,4 +955,11 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
 .kp-collection__sub {
   color: rgba(255, 255, 255, 0.55);
   font-size: 11px;
+}
+
+/* 展开态的外层容器不滚动、不限高：滚动由里面的 body 负责，
+   这样即使别处残留 is-expanded 的 max-height/overflow 规则，也不会在正文框上多出一条滚动条。 */
+.kp-slide__excerpt.is-expanded {
+  max-height: none;
+  overflow: visible;
 }
