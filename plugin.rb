@@ -398,7 +398,7 @@ after_initialize do
   # 默认不输出，靠官方这个 modifier 开关打开，不自己算一遍权限。
   register_modifier(:serialize_topic_op_likes_data) { true }
 
-  # 沉浸页简介：拿首楼纯文本，保留段落换行（不要把换行压成空格）
+  # 沉浸页简介：默认给纯文本（保留段落换行）
   # <p> / <br> / </div> 转成换行，其余标签去掉；连续空行压到一个
   add_to_serializer(:topic_list_item, :kpann_excerpt) do
     post = object.first_post
@@ -412,6 +412,27 @@ after_initialize do
     text = text.gsub(/[ \t]+/, " ")           # 行内空白归一
     text = text.gsub(/\n{3,}/, "\n\n")         # 最多空一行
     text.strip.truncate(400)
+  end
+
+  # 沉浸页正文：直接给处理好的 HTML 片段，跟视频页用同一套排版规则。
+  # 跟视频页一样把 iframe / onebox 拿掉（视频已经在顶部播了），
+  # 同时把只剩空白的那一段整段删掉，不留下空行。
+  add_to_serializer(:topic_list_item, :kpann_excerpt_html) do
+    post = object.first_post
+    html = post&.cooked.to_s
+    return "" if html.blank?
+
+    # 视频嵌入块整块去掉（含外面那层 p / span / div）
+    html =
+      html.gsub(%r{<p[^>]*>\s*(?:<br\s*/?>\s*)*<iframe[^>]*>.*?</iframe>\s*</p>}im, "")
+    html = html.gsub(%r{<iframe[^>]*>.*?</iframe>}im, "")
+    html = html.gsub(%r{<div[^>]*class="[^"]*(?:onebox|lazy-video)[^"]*"[^>]*>.*?</div>}im, "")
+    html = html.gsub(%r{<span[^>]*class="[^"]*(?:onebox|lazy-video)[^"]*"[^>]*>.*?</span>}im, "")
+    # 删完之后只剩 <br> / 空白的段落，整段拿走
+    html = html.gsub(%r{<p[^>]*>(?:\s|<br\s*/?>)*</p>}i, "")
+    html = html.gsub(%r{(?:\s|<br\s*/?>)+$}i, "")
+
+    html.strip.truncate(1200, escape: false)
   end
 end
 

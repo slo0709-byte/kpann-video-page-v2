@@ -256,7 +256,7 @@ export default class ShortsPage extends Component {
               </div>
               <div class="kp-slide__title">{{t.title}}</div>
               {{#if t.excerpt}}
-                <KpSlideExcerpt @text={{t.excerpt}} />
+                <KpSlideExcerpt @text={{t.excerpt}} @html={{t.excerptHtml}} />
               {{/if}}
             </div>
           </section>

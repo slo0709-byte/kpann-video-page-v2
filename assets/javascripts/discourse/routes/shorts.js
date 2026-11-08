@@ -40,6 +40,9 @@ export default class ShortsRoute extends DiscourseRoute {
         slug: topic.slug,
         title: topic.title,
         excerpt: topic.kpann_excerpt || topic.excerpt || "",
+        // 正文 HTML 片段（跟视频页同一套排版）：优先用服务端处理好的，
+        // 里面已经把视频 iframe 整块拿掉，只剩标题、段落、列表
+        excerptHtml: topic.kpann_excerpt_html || "",
         cover: topic.kpann_cover_url || topic.image_url || null,
         embed:
           topic.kpann_embed_url || (topic.kpann_videos?.[0]?.embed ?? null),

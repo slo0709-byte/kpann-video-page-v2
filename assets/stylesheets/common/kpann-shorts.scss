@@ -145,11 +145,49 @@
   overflow: hidden;
 }
 
-/* 正文里的换行与空格要按原样显示（否则一整段挤成一行） */
+/* 纯文本兜底：换行与空格按原样显示 */
 .kp-slide__excerpt-text {
   display: block;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* HTML 版正文：跟视频页同一套排版（段落有间距、宽链接不留空隙） */
+.kp-slide__excerpt-html {
+  white-space: normal;
+}
+
+.kp-slide__excerpt-html p {
+  margin: 0 0 6px;
+}
+
+.kp-slide__excerpt-html p:last-child {
+  margin-bottom: 0;
+}
+
+.kp-slide__excerpt-html ul,
+.kp-slide__excerpt-html ol {
+  margin: 0 0 6px;
+  padding-left: 18px;
+}
+
+.kp-slide__excerpt-html br {
+  display: block;
+  content: "";
+  margin: 0;
+}
+
+/* 视频已经在顶部播，正文里万一残留的播放器/卡片一律不占位 */
+.kp-slide__excerpt-html iframe,
+.kp-slide__excerpt-html .onebox,
+.kp-slide__excerpt-html .lazy-video-container,
+.kp-slide__excerpt-html .lazy-video-wrapper {
+  display: none !important;
+}
+
+.kp-slide__excerpt-html a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
 }
 
 .kp-slide__excerpt.is-expanded {
