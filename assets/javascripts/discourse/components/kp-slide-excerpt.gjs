@@ -83,13 +83,15 @@ export default class KpSlideExcerpt extends Component {
 
   <template>
     <div class={{this.containerClass}}>
-      {{#if this.useHtml}}
-        {{#if this.contentHtml}}
-          <div class="kp-slide__excerpt-text kp-slide__excerpt-html">{{{this.contentHtml}}}</div>
+      <div class="kp-slide__excerpt-body">
+        {{#if this.useHtml}}
+          {{#if this.contentHtml}}
+            <div class="kp-slide__excerpt-text kp-slide__excerpt-html">{{{this.contentHtml}}}</div>
+          {{/if}}
+        {{else}}
+          <span class="kp-slide__excerpt-text">{{this.collapsedText}}</span>
         {{/if}}
-      {{else}}
-        <span class="kp-slide__excerpt-text">{{this.collapsedText}}</span>
-      {{/if}}
+      </div>
       {{#if this.needsToggle}}
         <button type="button" class="kp-slide__excerpt-toggle" {{on "click" this.toggle}}>{{this.toggleLabel}}</button>
       {{/if}}

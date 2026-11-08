@@ -160,6 +160,8 @@
   overflow: hidden;
 }
 
+/* 正文容器本身不限高：限高放在里面的 .kp-slide__excerpt-body 上，
+   这样「…展开」按钮在裁切区外，长正文也能点开看全（按钮放进裁切区里会被一起裁掉）。 */
 .kp-slide__excerpt {
   position: relative;
   margin-top: 6px;
@@ -167,13 +169,17 @@
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.86);
   word-break: break-word;
-  /* 段落多的正文要限高，否则会把作者名与标题顶出屏幕 */
+}
+
+/* 段落多的正文要限高，否则会把作者名与标题顶出屏幕 */
+.kp-slide__excerpt-body {
+  position: relative;
   max-height: 5.2em;
   overflow: hidden;
 }
 
 /* 裁切处用渐隐过渡，不要切半行字 */
-.kp-slide__excerpt::after {
+.kp-slide__excerpt-body::after {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -184,7 +190,12 @@
   pointer-events: none;
 }
 
-.kp-slide__excerpt.is-expanded::after {
+.kp-slide__excerpt.is-expanded .kp-slide__excerpt-body {
+  max-height: 34vh;
+  overflow-y: auto;
+}
+
+.kp-slide__excerpt.is-expanded .kp-slide__excerpt-body::after {
   display: none;
 }
 
@@ -233,10 +244,7 @@
   text-decoration: underline;
 }
 
-.kp-slide__excerpt.is-expanded {
-  max-height: 42vh;
-  overflow-y: auto;
-}
+
 
 .kp-slide__excerpt-toggle {
   display: inline-block;
