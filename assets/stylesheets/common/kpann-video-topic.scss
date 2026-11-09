@@ -387,6 +387,9 @@ html body.kpv-on .kpv-coll__close {
     padding: 10px 12px;
   }
 
+  /* 抽屉从视频下沿往下展开，视频完整露着。
+     实测四种屏幕：视频下沿以上占 40~45%，剩下 54.9%~59.4% 可用；
+     取 54vh（最紧的 360×800 也留约 9px 缓冲），比原来 70vh 矮、但不遮视频。 */
   html body.kpv-on .kpv-coll__sheet {
     position: fixed;
     right: 0;
@@ -395,7 +398,8 @@ html body.kpv-on .kpv-coll__close {
     z-index: 1300;
     display: flex;
     flex-direction: column;
-    max-height: 70vh;
+    box-sizing: border-box;
+    max-height: 54vh;
     padding: 12px 16px calc(28px + env(safe-area-inset-bottom, 0px));
     background: var(--secondary);
     border-top: 1px solid var(--primary-low);

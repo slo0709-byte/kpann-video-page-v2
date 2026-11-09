@@ -122,12 +122,9 @@
   right: 70px;
   bottom: 46px;
   color: #fff;
-  /* 白字压在视频上要有底衬。这里只上文字阴影，不加 padding/背景：
-     绝对定位块加 padding 会把它的盒模型撑大，正文容易被顶出屏幕。
-     整屏的暗底由下面的 .kp-slide::after 渐变负责。 */
-  text-shadow:
-    0 1px 2px rgb(0 0 0 / 0.75),
-    0 0 8px rgb(0 0 0 / 0.55);
+  /* 不加文字阴影：照 YouTube Shorts 的做法（实测 text-shadow: none），
+     白字靠下面那条 0.4 的整屏渐变垫住就够了。
+     两层阴影会把字边压毛，画面也显脏。 */
 }
 
 /* 底部暗底：白字直接压在视频上会看不清，这一层负责衬托。
@@ -138,12 +135,36 @@
   bottom: 0;
   left: 0;
   z-index: 2;
-  height: 46%;
+  height: 200px;
+  /* 按 YouTube Shorts 的实测值：最底 0.4，往上逐级淡出 */
   background: linear-gradient(
     to top,
-    rgb(0 0 0 / 0.86) 0%,
-    rgb(0 0 0 / 0.55) 38%,
-    rgb(0 0 0 / 0.18) 72%,
+    rgb(0 0 0 / 0.4) 0%,
+    rgb(0 0 0 / 0.26) 42%,
+    rgb(0 0 0 / 0.08) 74%,
+    rgb(0 0 0 / 0) 100%
+  );
+  content: "";
+  pointer-events: none;
+}
+
+/* 顶部暗底：跟底部对称的 200px。
+   只有标题栏那条 56px 的渐变时，浅色画面在它下沿会切出一条亮边；
+   补上这一层，顶边也平滑过渡，不再出现「上面亮一行」。
+   顶部这块没有文字，所以最深处只到 0.62，比底部浅，不抢画面。 */
+.kp-slide::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: 200px;
+  /* 与底部同一档深浅，上下对称 */
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.4) 0%,
+    rgb(0 0 0 / 0.26) 42%,
+    rgb(0 0 0 / 0.08) 74%,
     rgb(0 0 0 / 0) 100%
   );
   content: "";
@@ -650,6 +671,10 @@ body.kpann-shorts-route .d-popover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  /* 核心的 .names 带 overflow: hidden，而头像外框（.post-avatar::after）
+     比头像四周各外扩 5px，超出作者行的部分会被裁掉，看着像头像框缺一块。
+     用户名自己有 max-width + 省略号，这里放开裁切不会溢出。 */
+  overflow: visible;
 }
 
 .kp-slide__authorlink {
@@ -865,8 +890,14 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   transform: translateY(0);
 }
 
+/* 「合集 · N 个」这一行钉在面板顶部，下面的集数滚过去时它不动。
+   面板本身还是滚动容器，所以只需要 sticky 一条，不用改结构。 */
 .kp-collection__title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   padding: 4px 8px 10px;
+  background: #1c1c1e;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
 }

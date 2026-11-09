@@ -99,6 +99,8 @@ export default class KpannVideoCollection extends Component {
     this.#syncBodyLock();
   }
 
+
+
   @action
   closeDrawer() {
     this.open = false;
