@@ -357,7 +357,139 @@ export default class ShortsRoute extends DiscourseRoute {
     holder.dataset.embed = embed;
     holder.querySelector("iframe")?.remove();
     holder.appendChild(this.buildFrame(embed));
+    this.#syncEpisodeHint(slide);
   }
+
+  // 同一帖子里左右滑动换集。
+  // 播放器是跨域 iframe，里面收不到我们的手势，所以只认「手指起点在画面的黑边/信息区」的滑动：
+  // 起点落在 stage 内部（真正有画面的地方）就不接管，留给播放器自己。
+  #episodeCount(slide) {
+    try {
+      return JSON.parse(slide?.dataset.videos || "[]").length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  #currentEpisode(slide) {
+    const embed = slide?.querySelector(".kp-slide__holder")?.dataset.embed || "";
+    let list = [];
+    try {
+      list = JSON.parse(slide.dataset.videos || "[]");
+    } catch (e) {
+      list = [];
+    }
+    return list.findIndex((v) => v.embed === embed);
+  }
+
+  #hintFor(slide) {
+    let hint = slide.querySelector(".kp-slide__episode");
+    if (!hint) {
+      hint = document.createElement("div");
+      hint.className = "kp-slide__episode";
+      slide.appendChild(hint);
+    }
+    return hint;
+  }
+
+  #flashHint(slide, text) {
+    const hint = this.#hintFor(slide);
+    hint.textContent = text;
+    hint.classList.add("is-shown");
+    clearTimeout(hint._kpTimer);
+    hint._kpTimer = setTimeout(() => hint.classList.remove("is-shown"), 1200);
+  }
+
+  // 换集后更新下方「3 / 9」并闪一下，让人确认换到第几集
+  #syncEpisodeHint(slide) {
+    const total = this.#episodeCount(slide);
+    if (total < 2) {
+      slide.querySelector(".kp-slide__episode")?.remove();
+      return;
+    }
+    const index = this.#currentEpisode(slide);
+    this.#flashHint(slide, (index + 1) + " / " + total);
+  }
+
+  #stepEpisode(slide, delta) {
+    const list = this.#episodeCount(slide);
+    if (list < 2) {
+      return false;
+    }
+    const index = this.#currentEpisode(slide);
+    const next = index + delta;
+    if (next < 0 || next >= list) {
+      // 到头了：提示一下，别让人以为滑动失灵
+      this.#flashHint(slide, next < 0 ? "已经是第一集" : "已经是最后一集");
+      return false;
+    }
+    let videos = [];
+    try {
+      videos = JSON.parse(slide.dataset.videos || "[]");
+    } catch (e) {
+      return false;
+    }
+    if (!videos[next]?.embed) {
+      return false;
+    }
+    this.switchVideo(slide, videos[next].embed);
+    return true;
+  }
+
+  // 本次触摸的起点；没有就是没在滑
+  #touchStart = null;
+
+  // 触点是否落在「可以接管」的地方：播放器画面之外（上下黑边、底部信息区）
+  #acceptsSwipe(target) {
+    if (target?.closest?.(".kp-slide__meta, .kp-slide__side, .kp-shorts__bar")) {
+      return true;
+    }
+    const stage = target?.closest?.(".kp-slide")?.querySelector(".kp-slide__holder");
+    if (!stage) {
+      return false;
+    }
+    const rect = stage.getBoundingClientRect();
+    const point = this.#touchStart;
+    if (!point) {
+      return false;
+    }
+    // 画面按 16:9 居中排在整屏里，上下留黑边；只有落在黑边上才算我们的地
+    const videoH = Math.min(rect.height, (rect.width * 9) / 16);
+    const videoTop = rect.top + (rect.height - videoH) / 2;
+    return point.y < videoTop || point.y > videoTop + videoH;
+  }
+
+  #onTouchStart = (event) => {
+    const t = event.touches?.[0];
+    if (!t || event.touches.length > 1) {
+      this.#touchStart = null;
+      return;
+    }
+    this.#touchStart = { x: t.clientX, y: t.clientY, target: event.target };
+  };
+
+  #onTouchEnd = (event) => {
+    const start = this.#touchStart;
+    this.#touchStart = null;
+    const t = event.changedTouches?.[0];
+    if (!start || !t) {
+      return;
+    }
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    // 横向位移要明显大于纵向，且超过 60px，才当成换集；否则交给上下滚
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) {
+      return;
+    }
+    if (!this.#acceptsSwipe(start.target)) {
+      return;
+    }
+    const slide = start.target?.closest?.(".kp-slide");
+    if (!slide) {
+      return;
+    }
+    this.#stepEpisode(slide, dx < 0 ? 1 : -1);
+  };
 
   async openComments(topicId, slug) {
     try {
@@ -392,6 +524,9 @@ export default class ShortsRoute extends DiscourseRoute {
     this.onScroll = () => this.syncSlides();
     window.addEventListener("scroll", this.onScroll, true);
     document.addEventListener("click", this.onClick);
+    // 左右滑动换集：挂在 document 上、只认 touch，桌面拖动不受影响
+    document.addEventListener("touchstart", this.#onTouchStart, { passive: true });
+    document.addEventListener("touchend", this.#onTouchEnd, { passive: true });
     this.pendingFocus = true;
     this.waitForTrack();
     setTimeout(() => this.syncSlides(), 600);
@@ -404,6 +539,8 @@ export default class ShortsRoute extends DiscourseRoute {
       window.removeEventListener("scroll", this.onScroll, true);
     }
     document.removeEventListener("click", this.onClick);
+    document.removeEventListener("touchstart", this.#onTouchStart);
+    document.removeEventListener("touchend", this.#onTouchEnd);
   }
 }
 

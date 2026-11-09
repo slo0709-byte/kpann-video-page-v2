@@ -859,6 +859,32 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
 }
 
 
+/* 换集提示：左右滑完在画面正中偏上闪一下「3 / 9」。
+   放在视频画面区域内、不压正文，平时不显示。 */
+.kp-slide__episode {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  z-index: 4;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.72);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.35);
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+.kp-slide__episode.is-shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 /* 合集：右侧按钮 + 底部列表 */
 .kp-collection {
   position: fixed;
