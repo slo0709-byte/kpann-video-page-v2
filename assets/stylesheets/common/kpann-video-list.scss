@@ -1,71 +1,73 @@
 /* 视频分类列表：卡片外观。
-   结构与数据由官方 topic-list-columns 转换器 + kpann-video-card 组件输出，
-   这个文件只管“长什么样”，不碰核心的行结构与其它主题的样式。 */
+   行的内容由 topic-list-item wrapper outlet 输出（connectors/topic-list-item），
+   这个文件只管「长什么样」。
+   栅格挂在 table 自己身上，不依赖主题给 tbody 的网格：
+   换主题时主题不会去动 table 的 display，卡片就不会被压成 0 宽。
+
+   版式照 YouTube 主页三列网格（1440 视口实测）：
+     卡片 368 宽 / 列间 16 / 行间 36
+     缩略图 368×207（16:9 直角），缩略图到信息区 12
+     信息区 = 36 头像 + 8 间距 + 文字列，文字列宽 324
+   字号/字重/颜色一律用核心变量（--title-color、--topic-title-font-weight、
+   --d-topic-list-title-font-size、--font-down-1、--primary-medium），
+   不引入 YouTube 的配色与字重——用户要的只是布局。 */
 
 table.topic-list.kpv-video-list {
-  display: block;
+  display: grid;
   width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 36px 16px;
 }
 
+table.kpv-video-list tbody {
+  display: contents;
+}
+
+/* 表头不要：卡片自己带标题和时间，那一行「话题 回复 浏览量 活动」只是噪音。
+   用 display:none 而不是 contents，否则它的格子会散进栅格占位。 */
 table.kpv-video-list thead,
 table.kpv-video-list .topic-list-header {
   display: none;
 }
 
-table.kpv-video-list tbody.topic-list-body {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 28px 20px;
-}
-
 @media (max-width: 1023px) {
-  table.kpv-video-list tbody.topic-list-body {
+  table.topic-list.kpv-video-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px 16px;
+    gap: 24px 16px;
   }
 }
 
 @media (max-width: 639px) {
-  table.kpv-video-list tbody.topic-list-body {
+  table.topic-list.kpv-video-list {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+    gap: 20px;
   }
 }
 
 table.kpv-video-list tr.topic-list-item {
-  display: flex;
+  display: block;
   position: relative;
-  overflow: hidden;
-  align-items: stretch;
-  border: 1px solid var(--primary-low);
-  border-radius: 14px;
-  background: var(--secondary);
-  transition:
-    transform 0.18s,
-    box-shadow 0.18s,
-    border-color 0.18s;
+  overflow: visible;
+  border: 0;
+  background: transparent;
 }
 
-table.kpv-video-list tr.topic-list-item:hover {
-  border-color: var(--primary-low-mid);
-  box-shadow: 0 12px 26px -14px rgb(0 0 0 / 0.35);
-  transform: translateY(-2px);
-}
-
-/* 批量选择框还在时，留在行首，不压住卡片 */
+/* 批量选择框：留在行首，不压住卡片 */
 table.kpv-video-list tr.topic-list-item .bulk-select,
 table.kpv-video-list tr.topic-list-item > td:first-child:not(.kpv-card-cell) {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 1;
   display: flex;
-  flex: 0 0 auto;
   align-items: center;
-  padding: 0 0 0 10px;
+  padding: 0;
   border: 0;
 }
 
 table.kpv-video-list td.kpv-card-cell {
   display: block;
-  flex: 1 1 auto;
-  min-width: 0;
+  width: 100%;
   padding: 0;
   border: 0;
 }
@@ -73,17 +75,18 @@ table.kpv-video-list td.kpv-card-cell {
 .kpv-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 12px;
   color: inherit;
   text-decoration: none;
 }
 
-.kpv-card:hover {
+.kpv-card:hover,
+.kpv-card:focus {
   color: inherit;
   text-decoration: none;
 }
 
-.kpv-card__cover {
+.kpv-card__thumb {
   position: relative;
   display: flex;
   overflow: hidden;
@@ -94,57 +97,102 @@ table.kpv-video-list td.kpv-card-cell {
   color: var(--primary-medium);
 }
 
-.kpv-card__cover img {
+.kpv-card__thumb img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.kpv-card__body {
+/* 时长角标：照参考站，右下角 8/8，黑底半透明，12px */
+.kpv-card__duration {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.8);
+  color: #fff;
+  font-size: var(--font-down-2);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.kpv-card__info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 头像链接：装扮插件在带 data-user-card 的链接上画框（inset: 0）
+   正好和链接一样大，被头像盖住；让链接比头像大一圈框才露出来，链接内不裁。 */
+.kpv-card__avatar {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  overflow: visible;
+  align-items: center;
+  padding: 3px;
+  border-radius: 50%;
+}
+
+.kpv-card__avatar .avatar {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.kpv-card__avatar::after {
+  inset: 0;
+  border-radius: 50%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+}
+
+.kpv-card__text {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  gap: 8px;
-  padding: 10px 12px 12px;
+  gap: 4px;
+  min-width: 0;
 }
 
 .kpv-card__title {
   display: -webkit-box;
   overflow: hidden;
-  color: var(--primary);
-  font-size: var(--font-down-1);
-  font-weight: 600;
-  line-height: 1.4;
+  color: var(--title-color);
+  font-size: var(--d-topic-list-title-font-size);
+  font-weight: var(--topic-title-font-weight);
+  line-height: 1.25;
+  word-break: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
+/* 元信息单行：不裁，头像框比头像大一圈，行高定死 + hidden 会切掉框底；
+   横向溢出交给用户名自己的省略号。 */
 .kpv-card__meta {
   display: flex;
-  overflow: hidden;
+  overflow: visible;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  margin-top: auto;
   color: var(--primary-medium);
-  font-size: var(--font-down-2);
+  font-size: var(--font-down-1);
+  line-height: 1.4;
 }
 
+/* 用户名不设 overflow: hidden：装扮的名牌背景是 ::before + z-index: -1，
+   裁切会把它一起裁掉。过长时用 flex 收缩 + 省略号。 */
 .kpv-card__user {
-  overflow: hidden;
   flex: 0 1 auto;
   min-width: 0;
+  max-width: 12em;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.kpv-card__avatar {
-  flex: 0 0 22px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  object-fit: cover;
 }
 
 .kpv-card__stat {
@@ -157,33 +205,20 @@ table.kpv-video-list td.kpv-card-cell {
 
 .kpv-card__stat .d-icon {
   color: var(--primary-medium);
-  font-size: var(--font-down-1);
+  font-size: var(--font-down-2);
 }
 
 .kpv-card__time {
   overflow: hidden;
   flex: 0 0 auto;
-  margin-left: auto;
   color: var(--primary-medium);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.kpv-card__time:visited {
-  color: var(--primary-medium);
-}
+/* 时间是纯文字：整张卡已经是链接，这里不再套第二个 <a>。 */
 
-.kpv-card__time:hover {
-  color: var(--tertiary);
-  text-decoration: none;
-}
-
-/* 置顶/未读只做轻提示，不改结构 */
-table.kpv-video-list tr.topic-list-item.pinned {
-  border-color: var(--tertiary-low);
-}
-
+/* 未读只做轻提示，不改结构（不加置顶染色，颜色一律跟核心） */
 table.kpv-video-list tr.topic-list-item.unread .kpv-card__title {
   font-weight: 700;
 }
-
