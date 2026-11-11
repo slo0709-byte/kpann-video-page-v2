@@ -30,6 +30,13 @@ table.kpv-video-list .topic-list-header {
   display: none;
 }
 
+/* 核心在 tbody 前后会插两个占位 div（--before-topic-list-body /
+   --after-topic-list-body）。table 是 grid 时它们会各占一整格，
+   把第一行挤得左边空出一格、末尾多一行空白。放到网格外。 */
+table.kpv-video-list > div {
+  display: none;
+}
+
 @media (max-width: 1023px) {
   table.topic-list.kpv-video-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
