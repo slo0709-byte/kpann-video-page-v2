@@ -4,6 +4,7 @@ import { action } from "@ember/object";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { service } from "@ember/service";
+import { modifier } from "ember-modifier";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 
 // 一帖多视频时的合集。
@@ -114,60 +115,78 @@ export default class KpannVideoCollection extends Component {
   }
 
   // 下拉关闭
-  // 只在「列表滚到顶、还继续往下拉」或「拖把手/头部」时接管，
-  // 平时列表里上下滑仍然是滚列表，不会误关。
+  // 用 ember-modifier 注册原生监听：Ember 的 {{on}} 修饰符给 touchmove
+  // 挂的是 passive 监听，passive 下 preventDefault() 无效，
+  // 真机下拉会被浏览器当成滚动抢走，抽屉就"拖不动"。
   #startY = null;
   #pulling = false;
 
   #atListTop() {
-    const list = document.querySelector(".kpv-coll__list");
+    const list = this.#sheetElement?.querySelector(".kpv-coll__list");
     return !list || list.scrollTop <= 0;
   }
 
-  @action
-  onTouchStart(event) {
-    const target = event.target;
-    const inList = !!target?.closest?.(".kpv-coll__list");
-    // 列表没滚到顶时，下拉是滚列表
-    if (inList && !this.#atListTop()) {
+  #sheetElement = null;
+
+  sheetGestures = modifier((element) => {
+    this.#sheetElement = element;
+
+    const onStart = (event) => {
+      const inList = !!event.target?.closest?.(".kpv-coll__list");
+      // 列表没滚到顶时，下拉是滚列表
+      if (inList && !this.#atListTop()) {
+        this.#startY = null;
+        this.#pulling = false;
+        return;
+      }
+      this.#startY = event.touches?.[0]?.clientY ?? null;
+      this.#pulling = false;
+    };
+
+    const onMove = (event) => {
+      if (this.#startY == null) {
+        return;
+      }
+      const y = event.touches?.[0]?.clientY ?? this.#startY;
+      const dy = y - this.#startY;
+      if (dy <= 0) {
+        // 往上推：交还给列表滚动
+        this.dragY = 0;
+        this.#pulling = false;
+        return;
+      }
+      this.#pulling = true;
+      this.dragY = dy;
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+    };
+
+    const onEnd = () => {
+      const shouldClose = this.#pulling && this.dragY > 80;
       this.#startY = null;
       this.#pulling = false;
-      return;
-    }
-    this.#startY = event.touches?.[0]?.clientY ?? null;
-    this.#pulling = false;
-  }
-
-  @action
-  onTouchMove(event) {
-    if (this.#startY == null) {
-      return;
-    }
-    const y = event.touches?.[0]?.clientY ?? this.#startY;
-    const dy = y - this.#startY;
-    if (dy <= 0) {
-      // 往上推：交还给列表滚动
       this.dragY = 0;
-      this.#pulling = false;
-      return;
-    }
-    this.#pulling = true;
-    this.dragY = dy;
-    if (event.cancelable) {
-      event.preventDefault();
-    }
-  }
+      if (shouldClose) {
+        this.closeDrawer();
+      }
+    };
 
-  @action
-  onTouchEnd() {
-    const shouldClose = this.#pulling && this.dragY > 80;
-    this.#startY = null;
-    this.#pulling = false;
-    this.dragY = 0;
-    if (shouldClose) {
-      this.closeDrawer();
-    }
-  }
+    element.addEventListener("touchstart", onStart, { passive: true });
+    element.addEventListener("touchmove", onMove, { passive: false });
+    element.addEventListener("touchend", onEnd, { passive: true });
+    element.addEventListener("touchcancel", onEnd, { passive: true });
+
+    return () => {
+      element.removeEventListener("touchstart", onStart);
+      element.removeEventListener("touchmove", onMove);
+      element.removeEventListener("touchend", onEnd);
+      element.removeEventListener("touchcancel", onEnd);
+      if (this.#sheetElement === element) {
+        this.#sheetElement = null;
+      }
+    };
+  });
 
   // 抽屉的初始位置用内联样式写死：插件 CSS 是运行时注入的，
   // 等它到位之前抽屉会先按原位渲染一遍（手机上一进页面就闪一下合集列表）。
@@ -231,12 +250,7 @@ export default class KpannVideoCollection extends Component {
         <div
           class="kpv-coll__sheet"
           style={{this.sheetStyle}}
-          {{! passive=false 是必须的：Ember 对 touchmove 默认挂 passive 监听，
-              passive 下 preventDefault() 无效，真机上下拉会被浏览器当成滚动抢走，
-              drawer 就"拖不动"。 }}
-          {{on "touchstart" this.onTouchStart passive=false}}
-          {{on "touchmove" this.onTouchMove passive=false}}
-          {{on "touchend" this.onTouchEnd}}
+          {{this.sheetGestures}}
         >
           <div class="kpv-coll__handle"></div>
           <header class="kpv-coll__head">
