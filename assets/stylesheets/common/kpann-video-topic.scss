@@ -412,7 +412,7 @@ html body.kpv-on .kpv-coll__close {
   html body.kpv-on .kpv-coll__handle {
     width: 36px;
     height: 4px;
-    margin: 0 auto 16px;
+    margin: 0 auto 8px;
     border-radius: 2px;
     background: var(--primary-low);
   }
@@ -444,12 +444,16 @@ html body.kpv-on .kpv-coll__close {
 
   html body.kpv-on .kpv-coll__sheet {
     overscroll-behavior: contain;
+    /* 抽屉自己接管手势：上下拖由脚本处理，不交给浏览器滚动/回弹 */
+    touch-action: none;
   }
 
   html body.kpv-on .kpv-coll__list {
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    /* 列表要能正常上下滚；拉到顶再往下拖时才由脚本接管 */
+    touch-action: pan-y;
   }
 }
 
@@ -470,9 +474,10 @@ html body.kpv-on .kpv-coll__list {
 html body.kpv-on .kpv-coll__head {
   display: flex;
   gap: 8px;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 8px;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 24px;
+  margin-bottom: 6px;
 }
 
 html body.kpv-on .kpv-coll__title {
@@ -483,6 +488,12 @@ html body.kpv-on .kpv-coll__title {
 html body.kpv-on .kpv-coll__count {
   color: var(--primary-medium);
   font-size: var(--font-down-1);
+}
+
+/* 数量紧跟在标题后，关闭按钮推到最右 */
+html body.kpv-on .kpv-coll__close {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 html body.kpv-on .kpv-coll__item {

@@ -113,17 +113,29 @@ export default class KpannVideoCollection extends Component {
     document.documentElement.classList.toggle("kpv-sheet-open", this.open);
   }
 
-  // 下拉关闭：跟沉浸式评论抽屉同一种手感
+  // 下拉关闭
+  // 只在「列表滚到顶、还继续往下拉」或「拖把手/头部」时接管，
+  // 平时列表里上下滑仍然是滚列表，不会误关。
   #startY = null;
+  #pulling = false;
+
+  #atListTop() {
+    const list = document.querySelector(".kpv-coll__list");
+    return !list || list.scrollTop <= 0;
+  }
 
   @action
   onTouchStart(event) {
-    // 在列表里滑动是滚列表，不是拖抽屉
-    if (event.target?.closest?.(".kpv-coll__list")) {
+    const target = event.target;
+    const inList = !!target?.closest?.(".kpv-coll__list");
+    // 列表没滚到顶时，下拉是滚列表
+    if (inList && !this.#atListTop()) {
       this.#startY = null;
+      this.#pulling = false;
       return;
     }
     this.#startY = event.touches?.[0]?.clientY ?? null;
+    this.#pulling = false;
   }
 
   @action
@@ -132,16 +144,25 @@ export default class KpannVideoCollection extends Component {
       return;
     }
     const y = event.touches?.[0]?.clientY ?? this.#startY;
-    this.dragY = Math.max(0, y - this.#startY);
-    if (this.dragY > 0 && event.cancelable) {
+    const dy = y - this.#startY;
+    if (dy <= 0) {
+      // 往上推：交还给列表滚动
+      this.dragY = 0;
+      this.#pulling = false;
+      return;
+    }
+    this.#pulling = true;
+    this.dragY = dy;
+    if (event.cancelable) {
       event.preventDefault();
     }
   }
 
   @action
   onTouchEnd() {
-    const shouldClose = this.dragY > 90;
+    const shouldClose = this.#pulling && this.dragY > 80;
     this.#startY = null;
+    this.#pulling = false;
     this.dragY = 0;
     if (shouldClose) {
       this.closeDrawer();
@@ -210,8 +231,11 @@ export default class KpannVideoCollection extends Component {
         <div
           class="kpv-coll__sheet"
           style={{this.sheetStyle}}
-          {{on "touchstart" this.onTouchStart}}
-          {{on "touchmove" this.onTouchMove}}
+          {{! passive=false 是必须的：Ember 对 touchmove 默认挂 passive 监听，
+              passive 下 preventDefault() 无效，真机上下拉会被浏览器当成滚动抢走，
+              drawer 就"拖不动"。 }}
+          {{on "touchstart" this.onTouchStart passive=false}}
+          {{on "touchmove" this.onTouchMove passive=false}}
           {{on "touchend" this.onTouchEnd}}
         >
           <div class="kpv-coll__handle"></div>
