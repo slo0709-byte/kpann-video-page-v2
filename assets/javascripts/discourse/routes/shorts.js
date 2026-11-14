@@ -276,6 +276,10 @@ export default class ShortsRoute extends DiscourseRoute {
     const panel = document.createElement("div");
     panel.className = "kp-collection__panel";
 
+    const handle = document.createElement("div");
+    handle.className = "kp-collection__handle";
+    panel.appendChild(handle);
+
     const title = document.createElement("div");
     title.className = "kp-collection__title";
     title.textContent = `合集 ${videos.length}`;
@@ -337,13 +341,76 @@ export default class ShortsRoute extends DiscourseRoute {
       }
     });
     document.body.appendChild(sheet);
+    this.#bindCollectionGestures(sheet, panel);
     requestAnimationFrame(() => sheet.classList.add("is-open"));
+  }
+
+  // 合集抽屉下拉关闭
+  // 用原生 addEventListener（passive: false）：{{on}} / 默认监听在 touchmove
+  // 上是 passive 的，preventDefault() 会被忽略，真机下拉会被浏览器当成滚动抢走。
+  #bindCollectionGestures(sheet, panel) {
+    let startY = null;
+    let pulling = false;
+
+    const listAtTop = () => panel.scrollTop <= 0;
+
+    const onStart = (event) => {
+      // 列表没滚到顶时，下拉是滚列表
+      if (!listAtTop()) {
+        startY = null;
+        pulling = false;
+        return;
+      }
+      startY = event.touches?.[0]?.clientY ?? null;
+      pulling = false;
+    };
+
+    const onMove = (event) => {
+      if (startY == null) {
+        return;
+      }
+      const y = event.touches?.[0]?.clientY ?? startY;
+      const dy = y - startY;
+      if (dy <= 0) {
+        // 往上推：交还给列表滚动
+        panel.style.transform = "";
+        pulling = false;
+        return;
+      }
+      pulling = true;
+      panel.style.transition = "none";
+      panel.style.transform = `translateY(${dy}px)`;
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+    };
+
+    const onEnd = () => {
+      const shouldClose = pulling && parseFloat(panel.style.transform.replace(/[^0-9.-]/g, "")) > 80;
+      startY = null;
+      pulling = false;
+      panel.style.transition = "";
+      panel.style.transform = "";
+      if (shouldClose) {
+        this.closeCollection();
+      }
+    };
+
+    sheet.addEventListener("touchstart", onStart, { passive: true });
+    sheet.addEventListener("touchmove", onMove, { passive: false });
+    sheet.addEventListener("touchend", onEnd, { passive: true });
+    sheet.addEventListener("touchcancel", onEnd, { passive: true });
   }
 
   closeCollection() {
     const sheet = document.querySelector(".kp-collection");
     if (!sheet) {
       return;
+    }
+    const panel = sheet.querySelector(".kp-collection__panel");
+    if (panel) {
+      panel.style.transition = "";
+      panel.style.transform = "";
     }
     sheet.classList.remove("is-open");
     setTimeout(() => sheet.remove(), 220);

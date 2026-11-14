@@ -900,16 +900,29 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   background: rgba(0, 0, 0, 0.55);
 }
 
+/* 顶部把手：跟评论抽屉一样的一条短横线 */
+.kp-collection__handle {
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 6px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
 .kp-collection__panel {
   width: 100%;
   max-height: 55vh;
   overflow-y: auto;
-  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  /* 顶部只留把手需要的间距，去掉原来那块空白 */
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
   background: #1c1c1e;
   border-radius: 16px 16px 0 0;
   color: #fff;
   transform: translateY(100%);
   transition: transform 0.22s ease;
+  /* 上下拖由脚本接管，不交给浏览器滚动/回弹 */
+  touch-action: pan-y;
+  overscroll-behavior: contain;
 }
 
 .kp-collection.is-open .kp-collection__panel {
@@ -922,9 +935,10 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 4px 8px 10px;
+  padding: 0 8px 8px;
   background: #1c1c1e;
   font-size: 13px;
+  line-height: 18px;
   color: rgba(255, 255, 255, 0.6);
 }
 
@@ -1019,4 +1033,116 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
 .kp-slide__excerpt.is-expanded {
   max-height: none;
   overflow: visible;
+}
+/* ============================================================
+   桌面端：剧场布局（≥ 1024px）
+   ------------------------------------------------------------
+   竖屏全屏沉浸是手机形态，直接搬到 1440 宽会表现为：
+   16:9 播放器撑满整屏、上下大片黑边、按钮贴屏幕最右边 44px。
+   这里在宽屏改成一个居中播放器 + 右侧信息栏：
+     - 播放器按 16:9 定宽，最高 1000px（核心 iframe 的 max-height 也是 1000px）
+     - 右侧栏放标题、作者、互动、合集
+   手机端所有规则保持不变，只在这个媒体查询里生效。
+   ============================================================ */
+@media (min-width: 1024px) {
+  body.kpann-shorts-route .kp-shorts__track {
+    padding: 0 32px;
+    box-sizing: border-box;
+  }
+
+  body.kpann-shorts-route .kp-slide {
+    align-items: center;
+    justify-content: center;
+    padding: 72px 0 40px;
+    box-sizing: border-box;
+  }
+
+  /* 舞台改成左右两栏：左播放器，右信息 */
+  body.kpann-shorts-route .kp-slide__stage {
+    position: relative;
+    inset: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 24px;
+    align-items: start;
+    width: 100%;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 8px;
+    box-sizing: border-box;
+  }
+
+  /* 播放器容器：16:9，最高 1000px，居中 */
+  body.kpann-shorts-route .kp-slide__holder {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    max-height: 1000px;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+  }
+
+  /* 核心全局有 iframe { max-height: min(1000px, 200vh) }，这里显式解掉 */
+  body.kpann-shorts-route .kp-slide__holder .kp-slide__frame {
+    max-width: none;
+    max-height: none;
+    width: 100%;
+    height: 100%;
+  }
+
+  body.kpann-shorts-route .kp-slide__holder .kp-slide__poster {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 右侧信息栏：作者、标题、互动、简介竖排 */
+  body.kpann-shorts-route .kp-slide__meta {
+    position: static;
+    inset: auto;
+    width: auto;
+    max-width: none;
+    padding: 0;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  /* 互动按钮从贴右边缘改成信息栏里的一横排 */
+  body.kpann-shorts-route .kp-slide__side {
+    position: static;
+    inset: auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 20px;
+    margin-top: 4px;
+  }
+
+  body.kpann-shorts-route .kp-act {
+    width: auto;
+    min-width: 52px;
+  }
+
+  /* 底部暗底在宽屏不需要：信息在右栏，不在画面上 */
+  body.kpann-shorts-route .kp-slide::after {
+    display: none;
+  }
+
+  /* 暗底层去掉后，画面四周保持黑底，剧场感更稳 */
+  body.kpann-shorts-route .kp-shorts {
+    background: #000;
+  }
+
+  /* 顶部返回条贴住内容宽度，不横跨整屏 */
+  body.kpann-shorts-route .kp-shorts__bar {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 12px 8px;
+  }
 }
