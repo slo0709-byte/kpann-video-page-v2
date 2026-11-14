@@ -327,13 +327,6 @@ export default class ShortsRoute extends DiscourseRoute {
       panel.appendChild(item);
     });
 
-    const close = document.createElement("button");
-    close.type = "button";
-    close.className = "kp-collection__close";
-    close.textContent = "关闭";
-    close.addEventListener("click", () => this.closeCollection());
-    panel.appendChild(close);
-
     sheet.appendChild(panel);
     sheet.addEventListener("click", (event) => {
       if (event.target === sheet) {
