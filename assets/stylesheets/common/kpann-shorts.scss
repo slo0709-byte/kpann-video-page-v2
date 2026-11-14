@@ -928,8 +928,10 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   overscroll-behavior: contain;
 }
 
+/* 头部是一条固定的条：底色 + 下边线，让人一眼看出下面的内容是从它底下滚过去的 */
 .kp-collection__header {
   flex: 0 0 auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .kp-collection__list {
