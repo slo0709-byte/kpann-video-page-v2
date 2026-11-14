@@ -276,14 +276,25 @@ export default class ShortsRoute extends DiscourseRoute {
     const panel = document.createElement("div");
     panel.className = "kp-collection__panel";
 
+    // 头部固定在面板顶部，只有下面的列表滚动。
+    // 不用 position: sticky 去「假装」固定——面板不滚，头部自然就不动。
+    const header = document.createElement("div");
+    header.className = "kp-collection__header";
+
     const handle = document.createElement("div");
     handle.className = "kp-collection__handle";
-    panel.appendChild(handle);
+    header.appendChild(handle);
 
     const title = document.createElement("div");
     title.className = "kp-collection__title";
     title.textContent = `合集 ${videos.length}`;
-    panel.appendChild(title);
+    header.appendChild(title);
+
+    panel.appendChild(header);
+
+    const list = document.createElement("div");
+    list.className = "kp-collection__list";
+    panel.appendChild(list);
 
     videos.forEach((video, index) => {
       const item = document.createElement("button");
@@ -324,7 +335,7 @@ export default class ShortsRoute extends DiscourseRoute {
         this.switchVideo(slide, video.embed);
         this.closeCollection();
       });
-      panel.appendChild(item);
+      list.appendChild(item);
     });
 
     sheet.appendChild(panel);
@@ -345,7 +356,8 @@ export default class ShortsRoute extends DiscourseRoute {
     let startY = null;
     let pulling = false;
 
-    const listAtTop = () => panel.scrollTop <= 0;
+    const listEl = panel.querySelector(".kp-collection__list");
+    const listAtTop = () => !listEl || listEl.scrollTop <= 0;
 
     const onStart = (event) => {
       // 列表没滚到顶时，下拉是滚列表

@@ -909,11 +909,14 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   background: rgba(255, 255, 255, 0.28);
 }
 
+/* 面板本身不滚动：头部固定在上面，滚动交给里面的 .kp-collection__list。
+   以前是面板自己滚 + 标题 sticky，列表一滚标题就跟内容叠着走。 */
 .kp-collection__panel {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-height: 55vh;
-  overflow-y: auto;
-  /* 顶部只留把手需要的间距，去掉原来那块空白 */
+  overflow: hidden;
   padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
   background: #1c1c1e;
   border-radius: 16px 16px 0 0;
@@ -925,6 +928,20 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   overscroll-behavior: contain;
 }
 
+.kp-collection__header {
+  flex: 0 0 auto;
+}
+
+.kp-collection__list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  /* 滚动时第一条不会紧贴着标题边界被切一半 */
+  padding-top: 2px;
+}
+
 .kp-collection.is-open .kp-collection__panel {
   transform: translateY(0);
 }
@@ -932,11 +949,7 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
 /* 「合集 · N 个」这一行钉在面板顶部，下面的集数滚过去时它不动。
    面板本身还是滚动容器，所以只需要 sticky 一条，不用改结构。 */
 .kp-collection__title {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   padding: 0 8px 8px;
-  background: #1c1c1e;
   font-size: 13px;
   line-height: 18px;
   color: rgba(255, 255, 255, 0.6);
