@@ -11,16 +11,6 @@ plugins:
     client: true
     description: "套用视频卡片样式的分类"
 
-  kpann_topic_video_layout:
-    default: true
-    client: true
-    description: "帖子页使用视频观看页布局"
-
-  kpann_immersive_entry:
-    default: true
-    client: true
-    description: "手机端视频帖显示沉浸观看入口"
-
   kpann_immersive_excerpt_chars:
     default: 80
     min: 0

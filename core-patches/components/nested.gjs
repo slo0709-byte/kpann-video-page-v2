@@ -1164,6 +1164,11 @@ export default class Nested extends Component {
 
       <PluginOutlet
         @connectorTagName="div"
+        @name="topic-footer-presence"
+        @outletArgs={{lazyHash model=@topic}}
+      />
+      <PluginOutlet
+        @connectorTagName="div"
         @name="topic-above-footer-buttons"
         @outletArgs={{lazyHash model=@topic}}
       />

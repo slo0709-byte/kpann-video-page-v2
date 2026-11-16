@@ -28,6 +28,14 @@ module ::KpannVideoCovers
   # 一帖多视频：按出现顺序存整组（供沉浸页做合集）
   VIDEOS_FIELD = "kpann_videos"
   BACKFILL_KEY = "kpann_video_covers_backfill_v3"
+  # 列表接口只在「视频分类」的帖子上输出插件字段（封面 / 播放地址 / 时长 / 合集 / 简介）。
+  # 列表一次 30 条、简介 HTML 一条上千字，全站都带等于每页白付几十 KB。
+  # 单个帖（topic_view）不受影响。
+  LIST_VIDEO_ONLY = -> do
+    SiteSetting.kpann_gallery_categories.to_s.split("|").map(&:strip).include?(
+      object.category_id.to_s,
+    )
+  end
 
   YOUTUBE_ID = /data-video-id="([A-Za-z0-9_\-]{6,})"/
   YOUTUBE_URL = %r{youtube\.com/(?:watch\?v=|embed/|shorts/)([A-Za-z0-9_\-]{6,})}
@@ -383,13 +391,13 @@ after_initialize do
 
   # 作者取 1 楼作者（first_post.user），不是帖子创建者：
   # 改过归属的帖子两者不同，用创建者会显示成别人
-  add_to_serializer(:topic_list_item, :kpann_poster_username) do
+  add_to_serializer(:topic_list_item, :kpann_poster_username, include_condition: ::KpannVideoCovers::LIST_VIDEO_ONLY) do
     (object.first_post&.user || object.user)&.username
   end
-  add_to_serializer(:topic_list_item, :kpann_poster_avatar) do
+  add_to_serializer(:topic_list_item, :kpann_poster_avatar, include_condition: ::KpannVideoCovers::LIST_VIDEO_ONLY) do
     (object.first_post&.user || object.user)&.avatar_template
   end
-  add_to_serializer(:topic_list_item, :kpann_poster_id) do
+  add_to_serializer(:topic_list_item, :kpann_poster_id, include_condition: ::KpannVideoCovers::LIST_VIDEO_ONLY) do
     (object.first_post&.user || object.user)&.id
   end
 
@@ -400,7 +408,7 @@ after_initialize do
 
   # 沉浸页简介：默认给纯文本（保留段落换行）
   # <p> / <br> / </div> 转成换行，其余标签去掉；连续空行压到一个
-  add_to_serializer(:topic_list_item, :kpann_excerpt) do
+  add_to_serializer(:topic_list_item, :kpann_excerpt, include_condition: ::KpannVideoCovers::LIST_VIDEO_ONLY) do
     post = object.first_post
     html = post&.cooked.to_s
     html = html.gsub(%r{<br\s*/?>}i, "\n")
@@ -417,7 +425,7 @@ after_initialize do
   # 沉浸页正文：直接给处理好的 HTML 片段，跟视频页用同一套排版规则。
   # 跟视频页一样把 iframe / onebox 拿掉（视频已经在顶部播了），
   # 同时把只剩空白的那一段整段删掉，不留下空行。
-  add_to_serializer(:topic_list_item, :kpann_excerpt_html) do
+  add_to_serializer(:topic_list_item, :kpann_excerpt_html, include_condition: ::KpannVideoCovers::LIST_VIDEO_ONLY) do
     post = object.first_post
     html = post&.cooked.to_s
     return "" if html.blank?
@@ -447,26 +455,17 @@ after_initialize do
     add_preloaded_topic_list_custom_field(name)
   end
 
-  add_to_serializer(:topic_list_item, :kpann_cover_url) { object.custom_fields[::KpannVideoCovers::FIELD] }
-  add_to_serializer(:topic_list_item, :kpann_embed_url) { object.custom_fields[::KpannVideoCovers::EMBED_FIELD] }
-  add_to_serializer(:topic_list_item, :kpann_duration) { object.custom_fields[::KpannVideoCovers::DURATION_FIELD] }
+  add_to_serializer(:topic_list_item, :kpann_cover_url, include_condition: ::KpannVideoCovers::LIST_VIDEO_ONLY) { object.custom_fields[::KpannVideoCovers::FIELD] }
+  add_to_serializer(:topic_list_item, :kpann_embed_url, include_condition: ::KpannVideoCovers::LIST_VIDEO_ONLY) { object.custom_fields[::KpannVideoCovers::EMBED_FIELD] }
+  add_to_serializer(:topic_list_item, :kpann_duration, include_condition: ::KpannVideoCovers::LIST_VIDEO_ONLY) { object.custom_fields[::KpannVideoCovers::DURATION_FIELD] }
   # 沉浸页合集：一帖多视频的完整列表
-  add_to_serializer(:topic_list_item, :kpann_videos) do
+  add_to_serializer(:topic_list_item, :kpann_videos, include_condition: ::KpannVideoCovers::LIST_VIDEO_ONLY) do
     raw = object.custom_fields[::KpannVideoCovers::VIDEOS_FIELD]
     begin
       raw.present? ? JSON.parse(raw) : []
     rescue JSON::ParserError
       []
     end
-  end
-
-  # 列表卡片要显示"频道"（作者），列表负载里没有这个字段，这里补上
-  add_to_serializer(:topic_list_item, :kpann_author_username) do
-    object.first_post&.user&.username
-  end
-  add_to_serializer(:topic_list_item, :kpann_author_avatar) do
-    user = object.first_post&.user
-    user && user.avatar_template_url.gsub("{size}", "48")
   end
 
   add_to_serializer(:topic_view, :kpann_cover_url) { object.topic.custom_fields[::KpannVideoCovers::FIELD] }
