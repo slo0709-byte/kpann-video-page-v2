@@ -434,9 +434,50 @@ export default class ShortsRoute extends DiscourseRoute {
       return;
     }
     holder.dataset.embed = embed;
+
+    // 换集时封面也要跟着换。
+    // 新 iframe 加载完之前是透明的（opacity:0），底下这层封面就是「占位图」；
+    // 它原来一直绑着这条帖的 t.cover（第 1 集的封面），所以每次换集都会先露出
+    // 第 1 集的封面再淡入新画面。这里换成当前这一集自己的封面（没有就用黑色占位）。
+    this.#swapPoster(slide, embed);
+
     holder.querySelector("iframe")?.remove();
     holder.appendChild(this.buildFrame(embed));
     this.#syncEpisodeHint(slide);
+  }
+
+  #swapPoster(slide, embed) {
+    let videos = [];
+    try {
+      videos = JSON.parse(slide?.dataset.videos || "[]");
+    } catch (e) {
+      videos = [];
+    }
+    const current = videos.find((v) => v.embed === embed);
+    const src = current?.cover || "";
+
+    const holder = slide.querySelector(".kp-slide__holder");
+    let poster = holder?.querySelector(".kp-slide__poster");
+
+    if (!src) {
+      // 没有这一集的封面：藏掉，让 holder 的黑底顶上，避免露出上一集的图
+      if (poster) {
+        poster.removeAttribute("src");
+        poster.style.display = "none";
+      }
+      return;
+    }
+
+    if (!poster && holder) {
+      poster = document.createElement("img");
+      poster.className = "kp-slide__poster";
+      poster.alt = "";
+      holder.insertBefore(poster, holder.firstChild);
+    }
+    if (poster) {
+      poster.style.display = "";
+      poster.src = src;
+    }
   }
 
   // 同一帖子里左右滑动换集。
