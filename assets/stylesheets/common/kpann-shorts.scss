@@ -1229,8 +1229,9 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
    表现就是「点了全屏画面没变大 / 位置错乱 / 只大了一点点」。
    这里显式把全屏态重新铺满视口。
    ============================================================ */
-.kp-slide__frame:fullscreen,
-.kp-slide__frame:-webkit-full-screen {
+/* 只用标准 :fullscreen（老 Safari 会自己映射 webkit 版本）。
+   混写 :-webkit-full-screen 会让 dart-sass 把整组当无效选择器丢掉。 */
+.kp-slide__frame:fullscreen {
   position: fixed !important;
   inset: 0 !important;
   z-index: 2147483647 !important;
@@ -1268,7 +1269,6 @@ body.kpann-shorts-route:has(.kp-slide__frame:fullscreen) .kp-slide::after {
    两种情况下画面都要铺满、我们自己的文字与按钮都要让开。
    ============================================================ */
 .kp-slide:fullscreen,
-.kp-slide:-webkit-full-screen,
 .kp-slide.is-fullscreen:not(:fullscreen) {
   position: fixed;
   inset: 0;
@@ -1283,10 +1283,13 @@ body:has(.kp-slide.is-fullscreen) {
   overflow: hidden;
 }
 
-/* 画面铺满：把原来那几条固定尺寸的规则在全屏态下一律让开 */
-.kp-slide:fullscreen .kp-slide__stage,
-.kp-slide:-webkit-full-screen .kp-slide__stage,
-.kp-slide.is-fullscreen .kp-slide__stage {
+/* 画面铺满：把原来那几条固定尺寸的规则在全屏态下一律让开。
+   写法上刻意只用 `:fullscreen` 与 `.is-fullscreen` 两种状态，且每条单独成组：
+   之前把 `:-webkit-full-screen` 混进同一组里，dart-sass 会把它当无效选择器，
+   整组连同下面的规则一起被丢掉（实测编译产物里 stage/holder/frame/poster 全部消失）。
+   真要兼容老 Safari，浏览器本来就把 `:-webkit-full-screen` 映射到 `:fullscreen`。 */
+.kp-slide.is-fullscreen .kp-slide__stage,
+.kp-slide:fullscreen .kp-slide__stage {
   position: absolute;
   inset: 0;
   display: block;
@@ -1294,18 +1297,16 @@ body:has(.kp-slide.is-fullscreen) {
   height: 100%;
 }
 
-.kp-slide:fullscreen .kp-slide__holder,
-.kp-slide:-webkit-full-screen .kp-slide__holder,
-.kp-slide.is-fullscreen .kp-slide__holder {
+.kp-slide.is-fullscreen .kp-slide__holder,
+.kp-slide:fullscreen .kp-slide__holder {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-.kp-slide:fullscreen .kp-slide__holder .kp-slide__frame,
-.kp-slide:-webkit-full-screen .kp-slide__holder .kp-slide__frame,
-.kp-slide.is-fullscreen .kp-slide__holder .kp-slide__frame {
+.kp-slide.is-fullscreen .kp-slide__holder .kp-slide__frame,
+.kp-slide:fullscreen .kp-slide__holder .kp-slide__frame {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
@@ -1314,6 +1315,17 @@ body:has(.kp-slide.is-fullscreen) {
   max-height: none !important;
   opacity: 1 !important;
   z-index: 1 !important;
+}
+
+/* 全屏态不要封面图。
+   这张 .kp-slide__poster 是固定第 1 集的封面（兜底用），
+   手机旋转时浏览器会重建/重载 iframe，那一下 frame 的 opacity 回落，
+   底层这张封面就露出来 —— 表现为「全屏后转屏闪一下第一个合集的封面」。
+   全屏里本来就在播，不需要封面兜底；宁可短暂黑底（holder 自带黑底），
+   也不要闪出错的图。 */
+.kp-slide.is-fullscreen .kp-slide__holder .kp-slide__poster,
+.kp-slide:fullscreen .kp-slide__holder .kp-slide__poster {
+  display: none !important;
 }
 
 /* 全屏时我们自己那几层（标题栏、作者/简介、互动栏、上下渐变）全部让开。
@@ -1396,7 +1408,6 @@ body:has(.kp-slide:fullscreen) .kp-slide::after {
    它的全屏图标还在原位；用户点到那一格时命中我们这层，直接退出全屏。
    所以整条链路上用户看到的永远只有 B 站那一个图标，我们不需要任何显示/隐藏逻辑。 */
 .kp-slide:fullscreen .kp-slide__fs .d-icon,
-.kp-slide:-webkit-full-screen .kp-slide__fs .d-icon,
 .kp-slide.is-fullscreen .kp-slide__fs .d-icon {
   opacity: 0;
 }
