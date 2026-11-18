@@ -3,6 +3,8 @@ import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import { on } from "@ember/modifier";
 import { service } from "@ember/service";
+import didInsert from "@ember/render-modifiers/modifiers/did-insert";
+import willDestroy from "@ember/render-modifiers/modifiers/will-destroy";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import DiscourseURL from "discourse/lib/url";
@@ -21,6 +23,79 @@ export default class ShortsPage extends Component {
   @service dialog;
 
   @tracked likeState = {};
+
+  // 全屏。做法与视频内页（kpann-video-stage）那一套一致：
+  // 点的是我们自己的按钮，对「同源的本站容器」.kp-slide 调系统全屏，
+  // 所以不受 B 站 iframe 跨域限制；B 站自己那个全屏键只是网页全屏（只能在自己
+  // iframe 内放大），放这儿等于没反应，所以不用它。
+  // 系统全屏被拒（iOS Safari / 无头环境）时退回 CSS 铺满视口，行为一致。
+  @tracked isFullscreen = false;
+
+  @action
+  async toggleFullscreen(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (this.isFullscreen || document.fullscreenElement) {
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      } catch (e) {
+        // 退出失败就下面复位状态
+      }
+      this.isFullscreen = false;
+      return;
+    }
+
+    const slide =
+      event?.currentTarget?.closest?.(".kp-slide") ||
+      document.querySelector(".kp-slide");
+
+    if (slide) {
+      try {
+        const request =
+          slide.requestFullscreen ||
+          slide.webkitRequestFullscreen ||
+          slide.mozRequestFullScreen ||
+          slide.msRequestFullscreen;
+        if (request) {
+          await request.call(slide);
+          this.isFullscreen = true;
+          return;
+        }
+      } catch (e) {
+        // 系统全屏被拒：落到下面的 CSS 铺满
+      }
+    }
+
+    this.isFullscreen = true;
+  }
+
+  // 用户按系统返回键 / Esc 退出全屏时，把按钮状态一起复位
+  @action
+  markFullscreenListener() {
+    this.onFsChange = () => {
+      this.isFullscreen = !!(
+        document.fullscreenElement || document.webkitFullscreenElement
+      );
+    };
+    document.addEventListener("fullscreenchange", this.onFsChange);
+    document.addEventListener("webkitfullscreenchange", this.onFsChange);
+  }
+
+  @action
+  unmarkFullscreenListener() {
+    if (this.onFsChange) {
+      document.removeEventListener("fullscreenchange", this.onFsChange);
+      document.removeEventListener("webkitfullscreenchange", this.onFsChange);
+      this.onFsChange = null;
+    }
+  }
+
+
 
   // 返回：回到当前这条视频的帖子页（不走浏览器历史，免得退回列表或别的页）
   @action
@@ -195,7 +270,11 @@ export default class ShortsPage extends Component {
   }
 
   <template>
-    <div class="kp-shorts">
+    <div
+      class="kp-shorts"
+      {{didInsert this.markFullscreenListener}}
+      {{willDestroy this.unmarkFullscreenListener}}
+    >
       <header class="kp-shorts__bar">
         <button type="button" class="kp-shorts__back" title="返回" {{on "click" this.goBack}}>
           {{dIcon "arrow-left"}}
@@ -206,7 +285,7 @@ export default class ShortsPage extends Component {
       <div class="kp-shorts__track">
         {{#each @model as |t|}}
           <section
-            class="kp-slide"
+            class="kp-slide {{if this.isFullscreen 'is-fullscreen'}}"
             data-topic-id={{t.id}}
             data-videos={{t.videosJson}}
           >
@@ -215,8 +294,25 @@ export default class ShortsPage extends Component {
                 {{#if t.cover}}
                   <img class="kp-slide__poster" src={{t.cover}} alt={{t.title}}>
                 {{/if}}
+
+                {{! 全屏键：只在 B 站视频上出现，用来盖住 B 站播放器自带那个全屏键
+                    （它跨域 iframe 里只做「网页全屏」，在这儿等于没反应）。
+                    YouTube 自带的全屏本来就能用，不加这个按钮。 }}
+                {{#if t.isBilibili}}
+                  <button
+                    type="button"
+                    class="kp-slide__fs"
+                    title={{if this.isFullscreen "退出全屏" "全屏"}}
+                    aria-label={{if this.isFullscreen "退出全屏" "全屏"}}
+                    {{on "click" this.toggleFullscreen}}
+                  >
+                    {{dIcon (if this.isFullscreen "compress" "expand")}}
+                  </button>
+                {{/if}}
               </div>
             </div>
+
+
 
             <div class="kp-slide__side">
               {{#if t.hasCollection}}

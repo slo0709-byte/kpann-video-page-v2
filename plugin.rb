@@ -110,10 +110,13 @@ module ::KpannVideoCovers
       return {} unless json && json["code"] == 0
       data = json["data"] || {}
       pic = data["pic"]
+      # 官方嵌入代码的形态是 ...&bvid=..&cid=..&p=1，cid 来自 pages[0].cid（多 P 时按 p 取）
+      first_page = (data["pages"] || []).first || {}
       {
         title: data["title"].to_s.strip.presence,
         cover: pic.present? ? pic.sub(%r{\Ahttp://}, "https://") : nil,
         duration: data["duration"].to_i > 0 ? data["duration"].to_i : nil,
+        cid: (first_page["cid"] || data["cid"]).presence,
       }
     rescue StandardError
       {}
@@ -189,7 +192,8 @@ module ::KpannVideoCovers
 
     # 单个视频的元数据：先查缓存，再抓一次页面
     def entry_meta(entry)
-      key = "v2_#{entry["id"]}"
+      # v3：多存一个 cid（官方嵌入代码需要），旧缓存没有它，所以换版本号让它重抓一次
+      key = "v3_#{entry["id"]}"
       cached = PluginStore.get(META_STORE, key)
       if cached.present?
         parsed = (JSON.parse(cached) rescue nil)
@@ -217,9 +221,27 @@ module ::KpannVideoCovers
       meta
     end
 
+    # B 站官方「嵌入代码」的地址形态（站外嵌入用的就是这一套参数）。
+    # 少了 isOutside / cid 时播放器会退成「站内预览」模式，全屏等按钮的行为不一样。
+    def bilibili_embed_url(key, cid, page)
+      if cid.present?
+        "https://player.bilibili.com/player.html?isOutside=true&#{key}&cid=#{cid}&p=#{page}" \
+          "&high_quality=1&autoplay=0"
+      else
+        "https://player.bilibili.com/player.html?#{key}&page=#{page}&high_quality=1&autoplay=0"
+      end
+    end
+
     def enrich_entry(entry)
       meta = entry_meta(entry)
       entry["title"] = meta["title"] if meta["title"].present?
+
+      if entry["provider"] == "bilibili" && meta["cid"].present?
+        page = entry["embed"].to_s[/[?&]page=(\d+)/, 1] || "1"
+        key = entry["id"].start_with?("av") ? "aid=#{entry["id"].delete_prefix("av")}" : "bvid=#{entry["id"]}"
+        entry["embed"] = bilibili_embed_url(key, meta["cid"], page)
+        entry["cid"] = meta["cid"]
+      end
       duration = meta["duration"].to_i
       entry["duration"] = duration if duration > 0
       cover = meta["cover"]
@@ -324,7 +346,8 @@ module ::KpannVideoCovers
           entries << {
             "provider" => "bilibili",
             "id" => bvid,
-            "embed" => "https://player.bilibili.com/player.html?#{param}&page=1&high_quality=1&autoplay=0",
+            "embed" =>
+              "https://player.bilibili.com/player.html?isOutside=true&#{param}&page=1&high_quality=1&autoplay=0",
             "cover" => nil,
           }
         end
@@ -353,9 +376,13 @@ module ::KpannVideoCovers
         end
         topic.custom_fields[DURATION_FIELD] = meta[:duration] if meta[:duration].present?
         page = cooked[/[?&]page=(\d+)/, 1] || "1"
-        key = bvid.start_with?("av") ? "aid=#{bvid.delete_prefix("av")}" : "bvid=#{bvid}"
-        topic.custom_fields[EMBED_FIELD] =
-          "https://player.bilibili.com/player.html?#{key}&page=#{page}&high_quality=1&autoplay=0"
+        key =
+          if bvid.start_with?("av")
+            "aid=#{bvid.delete_prefix("av")}"
+          else
+            "bvid=#{bvid}"
+          end
+        topic.custom_fields[EMBED_FIELD] = bilibili_embed_url(key, meta[:cid], page)
       end
 
       entries = video_entries(cooked).map { |entry| enrich_entry(entry) }

@@ -62,6 +62,12 @@ export default class KpannVideoStage extends Component {
     return this.currentVideo?.provider || null;
   }
 
+  // 只有 B 站需要我们自己放全屏键：它自带的全屏在跨域 iframe 里只做「网页全屏」，
+  // 落在 16:9 的框里等于没反应。YouTube 自带的全屏是真全屏，不用重复放一个。
+  get isBilibili() {
+    return this.provider === "bilibili" || !!this.topic?.kpann_embed_url?.includes("bilibili");
+  }
+
   get title() {
     return this.currentVideo?.title || this.topic?.title || "视频";
   }
@@ -297,17 +303,21 @@ export default class KpannVideoStage extends Component {
             ></iframe>
           {{/each}}
 
-          {{! 全屏按钮：B 站自带的是「网页全屏」，关在 16:9 里等于没反应，
-              这里给一个真系统全屏（对 .kpv 容器，同源）。只在手机显示。 }}
-          <button
-            type="button"
-            class="kpv__fs"
-            title={{if this.isFullscreen "退出全屏" "全屏"}}
-            aria-label={{if this.isFullscreen "退出全屏" "全屏"}}
-            {{on "click" this.toggleFullscreen}}
-          >
-            {{dIcon (if this.isFullscreen "compress" "expand")}}
-          </button>
+          {{! 全屏键（只在 B 站视频、只在手机）：整块透明命中区盖住 B 站自带那个全屏键，
+              点击由我们接管，对同源的 .kpv 容器走系统全屏。
+              平时不画任何图标（视觉上只有 B 站自己那个，跟它的控制条一起自动隐藏、点屏幕才出现），
+              进入全屏后才显示「退出」。YouTube 自带全屏本来就能用，不放这个。 }}
+          {{#if this.isBilibili}}
+            <button
+              type="button"
+              class="kpv__fs"
+              title={{if this.isFullscreen "退出全屏" "全屏"}}
+              aria-label={{if this.isFullscreen "退出全屏" "全屏"}}
+              {{on "click" this.toggleFullscreen}}
+            >
+              {{dIcon (if this.isFullscreen "compress" "expand")}}
+            </button>
+          {{/if}}
         </div>
 
         {{#if this.showPills}}

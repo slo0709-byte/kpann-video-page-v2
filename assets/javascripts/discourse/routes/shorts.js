@@ -44,6 +44,13 @@ export default class ShortsRoute extends DiscourseRoute {
         // 里面已经把视频 iframe 整块拿掉，只剩标题、段落、列表
         excerptHtml: topic.kpann_excerpt_html || "",
         cover: topic.kpann_cover_url || topic.image_url || null,
+        // 这一屏是不是 B 站视频：B 站自带的全屏键在跨域 iframe 里没法用，
+        // 需要一个我们自己的键盖住它；YouTube 的全屏本来就能用，不加。
+        // 直接算成布尔字段，模板里不用任何 comparison helper。
+        isBilibili:
+          (topic.kpann_videos?.[0]?.provider ||
+            (topic.kpann_embed_url?.includes("bilibili") ? "bilibili" : "youtube")) ===
+          "bilibili",
         embed:
           topic.kpann_embed_url || (topic.kpann_videos?.[0]?.embed ?? null),
         videos: Array.isArray(topic.kpann_videos) ? topic.kpann_videos : [],

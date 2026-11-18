@@ -34,32 +34,55 @@ html body.kpv-on .kpv__frame {
    B 站自带的那个是「网页全屏」，关在 16:9 里等于没反应，
    所以这里给一个真系统全屏（对 .kpv 容器，同源，不用跨域授权）。
    PC 不放：桌面浏览器里 B 站自带的全屏一般能用。 */
+/* 全屏键（只在 B 站视频、只在手机）。
+   做法与沉浸页一致：整块 64x64 的透明命中区贴在播放器右下角，
+   把 B 站自带那个全屏键（实测距角 right 15 / bottom 28、36x22）整块包住，
+   用户点到的永远是我们这一层。
+   平时不画图标——视觉上只有 B 站自己那个，跟它的控制条一起自动隐藏、点屏幕才出现。
+   进入全屏后才显示「退出」图标（那时 B 站控制条已隐藏，需要一个出口）。 */
 html body.kpv-on .kpv__fs {
   position: absolute;
-  right: 8px;
-  bottom: 10px;
+  right: 0;
+  bottom: 0;
   z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 64px;
+  height: 64px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
-  background: rgb(0 0 0 / 0.5);
+  background: transparent;
   color: #fff;
   cursor: pointer;
-  transition: background 0.15s ease;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
+/* 图标与 B 站那个键同位置同尺寸（36x22、距画面右 15 / 下 28） */
 html body.kpv-on .kpv__fs .d-icon {
+  position: absolute;
+  right: 15px;
+  bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 22px;
   color: #fff;
-  font-size: 15px;
+  fill: #fff;
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
 }
 
-html body.kpv-on .kpv__fs:active {
-  background: rgb(0 0 0 / 0.72);
+/* 全屏态同样不画图标（与沉浸页一致）。
+   全屏后 B 站控制条点屏幕仍会出来、它的全屏图标还在原位，
+   用户点到那一格命中我们的透明命中区，直接退出。 */
+html body.kpv-on .kpv:fullscreen .kpv__fs .d-icon,
+html body.kpv-on .kpv.is-fullscreen .kpv__fs .d-icon {
+  opacity: 0;
 }
 
 @media (min-width: 68.75rem) {
@@ -98,6 +121,11 @@ html body.kpv-on .kpv.is-fullscreen:not(:fullscreen) {
   z-index: 100000;
 }
 
+/* 兜底全屏期间锁住页面滚动，免得一划把画面带走（与沉浸页一致） */
+body:has(.kpv.is-fullscreen) {
+  overflow: hidden;
+}
+
 html body.kpv-on .kpv.is-fullscreen .kpv__frame {
   position: absolute;
   inset: 0;
@@ -106,9 +134,10 @@ html body.kpv-on .kpv.is-fullscreen .kpv__frame {
 }
 
 html body.kpv-on .kpv.is-fullscreen .kpv__fs {
-  right: 12px;
-  bottom: 16px;
-  background: rgb(0 0 0 / 0.6);
+  /* 位置与平时一致（贴右下角），背景保持透明。
+     早期那版这里是 34x34 的黑色圆角小方块，现在不能留着，
+     否则点进全屏会看到一个黑块。 */
+  background: transparent;
 }
 
 /* 全屏里不显示分集胶囊，退出后恢复 */

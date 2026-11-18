@@ -343,7 +343,7 @@ body.kpann-shorts-route .sidebar-wrapper {
   overflow: hidden;
 }
 
-.kp-slide__holder:has(iframe) .kp-slide__poster {
+.kp-slide__holder:not(:has(iframe:fullscreen)) .kp-slide__poster {
   display: none;
 }
 
@@ -812,7 +812,7 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
 }
 
 .kp-slide__holder .kp-slide__poster,
-.kp-slide__holder:has(iframe) .kp-slide__poster {
+.kp-slide__holder:not(:has(iframe:fullscreen)) .kp-slide__poster {
   display: block !important;
   position: absolute !important;
   inset: 0 !important;
@@ -826,7 +826,7 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
    核心有一条全局规则 iframe { max-height: min(1000px, 200vh) }，
    屏幕高过 1000px 时播放器只画到 1000px，下面露出下一屏的封面，
    所以这里必须把 max-height/max-width 解掉，不能只写 height: 100%。 */
-.kp-slide__holder .kp-slide__frame {
+.kp-slide__holder .kp-slide__frame:not(:fullscreen) {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
@@ -840,16 +840,16 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   background: transparent;
 }
 
-.kp-slide__holder .kp-slide__frame.is-ready {
+.kp-slide__holder .kp-slide__frame:not(:fullscreen).is-ready {
   opacity: 1;
 }
 
-.kp-slide__holder .kp-slide__frame.kp-frame-ready {
+.kp-slide__holder .kp-slide__frame:not(:fullscreen).kp-frame-ready {
   opacity: 1;
 }
 
 /* 播放器层级不能压住右侧互动栏和作者行 */
-.kp-slide__holder .kp-slide__frame {
+.kp-slide__holder .kp-slide__frame:not(:fullscreen) {
   z-index: 0 !important;
 }
 
@@ -1049,13 +1049,19 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
      - 右侧栏放标题、作者、互动、合集
    手机端所有规则保持不变，只在这个媒体查询里生效。
    ============================================================ */
+/* 双栏（PC）版式只给「非触屏设备」。
+   原先只按宽度 >= 1024 判断，手机横过来（iPhone 15 Pro Max 932、
+   iPad mini 竖屏 1024、iPad 横屏 1180）也会命中，页面就变成了 PC 的两栏。
+   官方做法是用 html 上的 discourse-touch / discourse-no-touch（按 any-pointer: coarse 判定，
+   见 docs 03-code-internals/28-designing-for-devices.md），
+   触屏设备一律走整屏沉浸版式，横屏就是横向全屏播放。 */
 @media (min-width: 1024px) {
-  body.kpann-shorts-route .kp-shorts__track {
+  html.discourse-no-touch body.kpann-shorts-route .kp-shorts__track {
     padding: 0 32px;
     box-sizing: border-box;
   }
 
-  body.kpann-shorts-route .kp-slide {
+  html.discourse-no-touch body.kpann-shorts-route .kp-slide {
     align-items: center;
     justify-content: center;
     padding: 72px 0 40px;
@@ -1063,7 +1069,7 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   }
 
   /* 舞台改成左右两栏：左播放器，右信息 */
-  body.kpann-shorts-route .kp-slide__stage {
+  html.discourse-no-touch body.kpann-shorts-route .kp-slide__stage {
     position: relative;
     inset: auto;
     display: grid;
@@ -1078,7 +1084,7 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   }
 
   /* 播放器容器：16:9，最高 1000px，居中 */
-  body.kpann-shorts-route .kp-slide__holder {
+  html.discourse-no-touch body.kpann-shorts-route .kp-slide__holder {
     position: relative;
     inset: auto;
     width: 100%;
@@ -1090,21 +1096,21 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   }
 
   /* 核心全局有 iframe { max-height: min(1000px, 200vh) }，这里显式解掉 */
-  body.kpann-shorts-route .kp-slide__holder .kp-slide__frame {
+  html.discourse-no-touch body.kpann-shorts-route .kp-slide__holder .kp-slide__frame:not(:fullscreen) {
     max-width: none;
     max-height: none;
     width: 100%;
     height: 100%;
   }
 
-  body.kpann-shorts-route .kp-slide__holder .kp-slide__poster {
+  html.discourse-no-touch body.kpann-shorts-route .kp-slide__holder .kp-slide__poster {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
   /* 右侧信息栏：作者、标题、互动、简介竖排 */
-  body.kpann-shorts-route .kp-slide__meta {
+  html.discourse-no-touch body.kpann-shorts-route .kp-slide__meta {
     position: static;
     inset: auto;
     width: auto;
@@ -1120,7 +1126,7 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
   }
 
   /* 互动按钮从贴右边缘改成信息栏里的一横排 */
-  body.kpann-shorts-route .kp-slide__side {
+  html.discourse-no-touch body.kpann-shorts-route .kp-slide__side {
     position: static;
     inset: auto;
     flex-direction: row;
@@ -1129,25 +1135,268 @@ body.kpann-shorts-route .kp-slide__authorlink .kp-slide__username {
     margin-top: 4px;
   }
 
-  body.kpann-shorts-route .kp-act {
+  html.discourse-no-touch body.kpann-shorts-route .kp-act {
     width: auto;
     min-width: 52px;
   }
 
   /* 底部暗底在宽屏不需要：信息在右栏，不在画面上 */
-  body.kpann-shorts-route .kp-slide::after {
+  html.discourse-no-touch body.kpann-shorts-route .kp-slide::after {
     display: none;
   }
 
   /* 暗底层去掉后，画面四周保持黑底，剧场感更稳 */
-  body.kpann-shorts-route .kp-shorts {
+  html.discourse-no-touch body.kpann-shorts-route .kp-shorts {
     background: #000;
   }
 
   /* 顶部返回条贴住内容宽度，不横跨整屏 */
-  body.kpann-shorts-route .kp-shorts__bar {
+  html.discourse-no-touch body.kpann-shorts-route .kp-shorts__bar {
     max-width: 1240px;
     margin: 0 auto;
     padding: 12px 8px;
   }
+}
+
+/* ============================================================
+   触屏设备横屏：整屏铺满、文字压在画面底部（同竖屏那套）
+   ------------------------------------------------------------
+   官方文档 03-code-internals/28-designing-for-devices.md：
+   html 上按 any-pointer: coarse 挂 discourse-touch。
+   横屏时高度只有 390~430，原来的 bottom: 46px 会让文字压住画面下半部，
+   这里把文字块再往下贴、简介收成两行，右侧按钮也跟着往上收，
+   保证画面不被文字盖住太多。
+   ============================================================ */
+@media (orientation: landscape) {
+  /* 触屏设备横过来就按「横向全屏播放」处理，不再按高度切分。
+     原先写了 max-height: 500px，实测用户手机横屏是 1280x577，
+     因为高度超过 500 整段规则一次都没命中，文字就压在 B 站自己的控制条上。 */
+
+  /* 横屏就是「横向全屏播放」：画面铺满整屏，文字全部让开。
+     实测 844x390 下文字块落在 y255~345，正好压住播放器自带的
+     控制条（00:00 / 进度条 / 弹幕开关），也就是用户说的「视频被盖住」。
+     播放器自带标题在顶部、控制条在底部，中间没有空白可用，
+     所以这里只留返回键和右侧互动栏，正文/作者/标题收起；
+     转回竖屏立刻恢复（竖屏那套规则一点没动）。 */
+  html.discourse-touch body.kpann-shorts-route .kp-slide__meta {
+    display: none;
+  }
+
+  /* 底部渐变只为衬字，字没了就不要，免得压暗画面下半部 */
+  html.discourse-touch body.kpann-shorts-route .kp-slide::after {
+    display: none;
+  }
+
+  /* 顶部渐变同样收掉，只留返回条自己那条 */
+  html.discourse-touch body.kpann-shorts-route .kp-slide::before {
+    display: none;
+  }
+
+  /* 横屏的互动栏整列收起。
+     B 站播放器自己在右侧也有一列按钮（更多 / 清晰度 / 全屏），
+     我们这列摆哪儿都会跟它并排挤在一起；上下又都是播放器自己的 UI。
+     横屏只留右下角那个全屏键（它盖住 B 站自带的那个），转回竖屏互动栏立刻回来。 */
+  html.discourse-touch body.kpann-shorts-route .kp-slide__side {
+    display: none;
+  }
+
+  /* 顶部返回条横屏整条撤掉。
+     试过三种位置都压住 B 站自己的控件：留在左上角压它的返回箭头、
+     压窄后压它的标题行、挪到左下角压它的进度条那一排（截图可证）。
+     B 站 iframe 内的 UI 我们改不到，所以横屏一律让位，画面独占。
+     退出走系统返回手势（popstate 守卫照常生效）或转回竖屏，
+     竖屏那条立刻回来。 */
+  html.discourse-touch body.kpann-shorts-route .kp-shorts__bar {
+    display: none;
+  }
+
+  /* 换集提示在横屏居中 */
+  html.discourse-touch body.kpann-shorts-route .kp-slide__episode {
+    top: 45%;
+  }
+}
+
+/* ============================================================
+   全屏态：让浏览器自己的 fullscreen 样式说了算
+   ------------------------------------------------------------
+   B 站 / YouTube 自己的全屏按钮是对 iframe 自身调 requestFullscreen。
+   进全屏后，父页里 document.fullscreenElement 就是这个 iframe，
+   浏览器会把它提到 top layer 并按视口铺满。
+
+   但上面有一段给 .kp-slide__frame 写死了
+   position/inset/width/height 且带 !important —— 作者的 !important
+   优先级高于浏览器默认的 :fullscreen 样式，会把全屏框按回普通流里，
+   表现就是「点了全屏画面没变大 / 位置错乱 / 只大了一点点」。
+   这里显式把全屏态重新铺满视口。
+   ============================================================ */
+.kp-slide__frame:fullscreen,
+.kp-slide__frame:-webkit-full-screen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  /* 前面的规则把播放器初始设成 opacity:0，等 load 完才淡入；
+     万一在全屏切换那一刻还没加 is-ready，画面就会是全黑的，这里兜住 */
+  opacity: 1 !important;
+  border: 0;
+  background: #000;
+}
+
+/* 全屏时祖先不能裁切，也不能留 overflow/transform 干扰 top layer 的呈现 */
+.kp-slide:has(.kp-slide__frame:fullscreen),
+.kp-slide__holder:has(.kp-slide__frame:fullscreen) {
+  overflow: visible !important;
+}
+
+/* 全屏时我们自己那几层装饰（字、按钮、渐变）都不该盖在画面上 */
+body.kpann-shorts-route:has(.kp-slide__frame:fullscreen) .kp-slide__meta,
+body.kpann-shorts-route:has(.kp-slide__frame:fullscreen) .kp-slide__side,
+body.kpann-shorts-route:has(.kp-slide__frame:fullscreen) .kp-shorts__bar,
+body.kpann-shorts-route:has(.kp-slide__frame:fullscreen) .kp-slide::before,
+body.kpann-shorts-route:has(.kp-slide__frame:fullscreen) .kp-slide::after {
+  display: none !important;
+}
+
+/* ============================================================
+   全屏：与视频内页（kpann-video-topic.scss 的 .kpv.is-fullscreen）同一套做法
+   ------------------------------------------------------------
+   点我们自己的按钮 → 对同源的 .kp-slide 调系统 requestFullscreen；
+   被拒（iOS Safari / 无头）时挂 .is-fullscreen 用 CSS 兜底铺满视口。
+   两种情况下画面都要铺满、我们自己的文字与按钮都要让开。
+   ============================================================ */
+.kp-slide:fullscreen,
+.kp-slide:-webkit-full-screen,
+.kp-slide.is-fullscreen:not(:fullscreen) {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+}
+
+/* 兜底全屏期间锁住页面滚动，免得一划把画面带走 */
+body:has(.kp-slide.is-fullscreen) {
+  overflow: hidden;
+}
+
+/* 画面铺满：把原来那几条固定尺寸的规则在全屏态下一律让开 */
+.kp-slide:fullscreen .kp-slide__stage,
+.kp-slide:-webkit-full-screen .kp-slide__stage,
+.kp-slide.is-fullscreen .kp-slide__stage {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.kp-slide:fullscreen .kp-slide__holder,
+.kp-slide:-webkit-full-screen .kp-slide__holder,
+.kp-slide.is-fullscreen .kp-slide__holder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.kp-slide:fullscreen .kp-slide__holder .kp-slide__frame,
+.kp-slide:-webkit-full-screen .kp-slide__holder .kp-slide__frame,
+.kp-slide.is-fullscreen .kp-slide__holder .kp-slide__frame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  z-index: 1 !important;
+}
+
+/* 全屏时我们自己那几层（标题栏、作者/简介、互动栏、上下渐变）全部让开。
+   注意层级：.kp-shorts__bar 是 .kp-slide 的**兄弟**（包在 .kp-shorts 里），
+   所以它不能用 .kp-slide 当祖先，否则规则永远不命中——
+   改用 body:has(.kp-slide.is-fullscreen) 从页面根上判断。
+   CSS 兜底（非真 :fullscreen）与真系统全屏两种情况都要盖，
+   所以各自带 !important。 */
+body:has(.kp-slide.is-fullscreen) .kp-shorts__bar,
+body:has(.kp-slide.is-fullscreen) .kp-slide__meta,
+body:has(.kp-slide.is-fullscreen) .kp-slide__side,
+body:has(.kp-slide.is-fullscreen) .kp-slide::before,
+body:has(.kp-slide.is-fullscreen) .kp-slide::after,
+body:has(.kp-slide:fullscreen) .kp-shorts__bar,
+body:has(.kp-slide:fullscreen) .kp-slide__meta,
+body:has(.kp-slide:fullscreen) .kp-slide__side,
+body:has(.kp-slide:fullscreen) .kp-slide::before,
+body:has(.kp-slide:fullscreen) .kp-slide::after {
+  display: none !important;
+}
+
+
+
+
+/* 全屏键：位置与 B 站播放器自带的全屏键重合。
+   实测 B 站那个键在 iframe 内是「距画面右下角 right 15 / bottom 28、36x22」。
+   这个按钮挂在 .kp-slide__stage 里，而 stage 就是画面盒子（铺满时=整屏，
+   PC 双栏时=左边那一格），所以同样的 right/bottom 跟 B 站键完全对齐。
+   外观保持「一条控制条上的小图标」：透明底、白色图标、无边框。 */
+/* 全屏键（只给 B 站视频）。
+   平时这片区域是纯透明的命中区，视觉上只有 B 站自己那个全屏图标；
+   点击落到我们这里，B 站那个键收不到点击。
+   命中区铺满画面最右下角 64x64，B 站那个键（实测 36x22、距角 15/28）必然在其中。
+   图标（只在全屏后显示）用绝对定位钉在与 B 站那个键完全相同的位置和尺寸，
+   所以换成「退出」图标时也不会跑到别处去。 */
+.kp-slide__fs {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.kp-slide__fs .d-icon {
+  /* 与 B 站那个键同位置同尺寸（36x22、距画面右 15 / 下 28），图标居中，
+     所以图标中心跟 B 站图标中心严丝合缝。 */
+  position: absolute;
+  right: 15px;
+  bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 22px;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  fill: rgba(255, 255, 255, 0.9);
+  /* 平时一律不显示：B 站控制条自己会显示/隐藏它那个全屏图标，
+     我们只需要那层透明命中区接管点击，视觉上不额外画任何图标，
+     所以用户看到的永远是「跟 B 站自带的一样，自动隐藏、点屏幕才出现」。 */
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+/* 桌面悬停时露出来，让鼠标用户知道这里有按钮（手机不触发 hover，
+   手机上看到的永远只有 B 站自己那一个图标）。 */
+
+
+/* 全屏态也不画图标。
+   理由：按钮本身是一层透明的实心命中区，全屏后 B 站控制条照样会「点屏幕就出来」，
+   它的全屏图标还在原位；用户点到那一格时命中我们这层，直接退出全屏。
+   所以整条链路上用户看到的永远只有 B 站那一个图标，我们不需要任何显示/隐藏逻辑。 */
+.kp-slide:fullscreen .kp-slide__fs .d-icon,
+.kp-slide:-webkit-full-screen .kp-slide__fs .d-icon,
+.kp-slide.is-fullscreen .kp-slide__fs .d-icon {
+  opacity: 0;
 }
